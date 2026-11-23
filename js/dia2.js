@@ -369,7 +369,7 @@ const abrirEscalada = (() => {
     // Vídeo sin sonido con el mensaje desde el principio; el botón sale al terminar (o si algo falla)
     async function pantallaVideo(nombre, titulo, boton, accion) {
       juego = null;
-      const q = mostrar("esc-video", `<video playsinline muted preload="auto"></video><div class="esc-pie"><h3 role="status">${titulo}</h3><button type="button" class="boton" hidden>${boton}</button></div>`);
+      const q = mostrar("esc-video esc-" + nombre, `<video playsinline muted preload="auto"></video><div class="esc-pie"><h3 role="status">${titulo}</h3><button type="button" class="boton" hidden>${boton}</button></div>`);
       const esta = capa;
       const v = q("video"), b = q(".boton");
       v.muted = true;

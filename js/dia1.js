@@ -58,7 +58,7 @@ const abrirRecap = (() => {
     return () => { cerrado = true; if (limpiar) limpiar(); };
   }
 
-  function montar(contenedor, cerrar, { intro: INTRO, condiciones: CONDICIONES, nota: NOTA, escenas: ESCENAS }) {
+  function montar(contenedor, cerrar, { intro: INTRO, condiciones: CONDICIONES, nota: NOTA, escenas: ESCENAS, final: FINAL }) {
     const urls = [];
     let cerrado = false;
     const raiz = document.createElement("div");
@@ -81,6 +81,10 @@ const abrirRecap = (() => {
           <div class="recap-fotos">${e.fotos.map(([n]) => `<img data-src="${CARPETA}${n}" alt="${e.texto}" draggable="false">`).join("")}</div>
           <p class="recap-texto">${e.texto}</p>
         </section>`).join("")}
+        <section class="recap-hoja recap-intro" hidden><div>
+          ${FINAL.parrafos.map((p) => `<p>${p}</p>`).join("")}
+          <h3>${FINAL.cierre}</h3><p class="recap-firma">${FINAL.firma}</p>
+        </div></section>
       </div>
       <nav class="recap-nav">
         <button type="button" class="recap-atras">Atrás</button>
@@ -117,7 +121,7 @@ const abrirRecap = (() => {
           }).catch(() => img.setAttribute("data-src", ruta)); // se reintenta al volver
         }));
       raiz.querySelector(".recap-progreso span").style.transform = `scaleX(${aceptado ? i / ultima : 0})`;
-      raiz.querySelector(".recap-cuenta").textContent = aceptado && i ? `${i} / ${ultima}` : "";
+      raiz.querySelector(".recap-cuenta").textContent = aceptado && i && i <= ESCENAS.length ? `${i} / ${ESCENAS.length}` : "";
       atras.style.visibility = i ? "visible" : "hidden";
       sigue.textContent = i === 0 ? "Continuar" : i === ultima ? "Terminar" : "Siguiente";
       sigue.style.visibility = !aceptado && i === 1 ? "hidden" : "visible";
