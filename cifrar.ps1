@@ -20,18 +20,39 @@ $clave = $clave.Trim().Normalize([Text.NormalizationForm]::FormC)
 if ($clave.Length -lt 8) { throw 'La clave debe tener al menos 8 caracteres.' }
 if (-not (Test-Path $origen)) { throw 'No existe la carpeta privado.' }
 
-$sal = New-Object byte[] 16
-$azar = [Security.Cryptography.RandomNumberGenerator]::Create()
-$azar.GetBytes($sal)
-$kdf = New-Object Security.Cryptography.Rfc2898DeriveBytes(
-  [Text.Encoding]::UTF8.GetBytes($clave), $sal, $iteraciones, [Security.Cryptography.HashAlgorithmName]::SHA256)
-$kAes = $kdf.GetBytes(32)
-$kMac = $kdf.GetBytes(32)
+function Set-Llaves([byte[]]$s) {
+  $script:sal = $s
+  $kdf = New-Object Security.Cryptography.Rfc2898DeriveBytes(
+    [Text.Encoding]::UTF8.GetBytes($clave), $s, $iteraciones, [Security.Cryptography.HashAlgorithmName]::SHA256)
+  $script:kAes = $kdf.GetBytes(32)
+  $script:kMac = $kdf.GetBytes(32)
+}
+function Get-Mac([byte[]]$b) {
+  return ,((New-Object Security.Cryptography.HMACSHA256(,$kMac)).ComputeHash($b))
+}
+# Con la misma clave se conserva la sal, para que los moviles no vuelvan a pedirla
+$reutiliza = $false
+$fSal = Join-Path $destino 'clave.json'; $fPrueba = Join-Path $destino 'prueba.bin'
+if ((Test-Path $fSal) -and (Test-Path $fPrueba)) {
+  Set-Llaves ([Convert]::FromBase64String((Get-Content $fSal -Raw | ConvertFrom-Json).sal))
+  $b = [IO.File]::ReadAllBytes($fPrueba)
+  $m = [Text.Encoding]::UTF8.GetBytes('prueba') + [byte]0 + $b[0..($b.Length - 33)]
+  $reutiliza = [Convert]::ToBase64String((Get-Mac $m)) -ceq [Convert]::ToBase64String($b[($b.Length - 32)..($b.Length - 1)])
+}
+if (-not $reutiliza) {
+  $nueva = New-Object byte[] 16
+  [Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($nueva)
+  Set-Llaves $nueva
+}
 
 function Protect-Datos([string]$nombre, [byte[]]$datos) {
   $aes = [Security.Cryptography.Aes]::Create()
   $aes.KeySize = 256; $aes.Mode = 'CBC'; $aes.Padding = 'PKCS7'
-  $aes.Key = $kAes; $aes.GenerateIV()
+  $aes.Key = $kAes
+  # IV derivado del contenido: lo que no cambia se cifra igual y no ensucia Git
+  $mi = New-Object IO.MemoryStream
+  $p = [Text.Encoding]::UTF8.GetBytes("iv:$nombre"); $mi.Write($p, 0, $p.Length); $mi.WriteByte(0); $mi.Write($datos, 0, $datos.Length)
+  $aes.IV = [byte[]](Get-Mac $mi.ToArray())[0..15]
   $c = $aes.CreateEncryptor().TransformFinalBlock($datos, 0, $datos.Length)
   $m = New-Object IO.MemoryStream
   $n = [Text.Encoding]::UTF8.GetBytes($nombre)
@@ -56,4 +77,4 @@ Get-ChildItem $origen -Recurse -File | ForEach-Object {
 }
 $json = '{"iteraciones":' + $iteraciones + ',"sal":"' + [Convert]::ToBase64String($sal) + '"}'
 [IO.File]::WriteAllText((Join-Path $destino 'clave.json'), $json)
-"Cifrados $total archivos en datos/"
+"Cifrados $total archivos en datos/ (misma clave: $reutiliza)"

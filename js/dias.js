@@ -10,7 +10,7 @@ function contenidoProvisional(dibujo) {
 
 const DIAS = [
   { dia: 1, hueco: ".fila-1", fondo: "#b14645", texto: "#ffffff", dibujo: DIBUJOS.estrella, abrir: abrirRecap },
-  { dia: 2, hueco: ".fila-1", fondo: "#d6c5b5", texto: "#8f3233", dibujo: DIBUJOS.camello },
+  { dia: 2, hueco: ".fila-1", fondo: "#d6c5b5", texto: "#8f3233", dibujo: DIBUJOS.camello, abrir: abrirEscalada },
   { dia: 3, hueco: ".col-izq", fondo: "#476356", texto: "#f2b7bc", dibujo: DIBUJOS.regalos },
   { dia: 4, hueco: ".col-der", fondo: "#f2b7bc", texto: "#26233f", dibujo: DIBUJOS.corona },
   { dia: 5, hueco: ".col-der", fondo: "#a9ab88", texto: "#1d1b2e", dibujo: DIBUJOS.roscon },
