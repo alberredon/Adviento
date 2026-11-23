@@ -1,0 +1,64 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Calendario de adviento</title>
+  <meta name="theme-color" content="#f5f3ee">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-title" content="Adviento">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icono.svg" type="image/svg+xml">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Abril+Fatface&family=Bebas+Neue&family=Nunito:wght@600;700&family=Pacifico&display=swap">
+  <link rel="stylesheet" href="css/estilos.css">
+</head>
+<body>
+  <main id="inicio" class="pantalla inicio">
+    <h1>
+      <span class="t-calendario">Calendario de</span>
+      <span class="t-adviento">adviento</span>
+      <span class="t-anio" id="anio"></span>
+    </h1>
+    <div class="escena" id="escena" aria-hidden="true"></div>
+    <button id="continuar" class="boton" type="button">Continuar</button>
+  </main>
+
+  <main id="pantalla-clave" class="pantalla clave" hidden>
+    <form id="form-clave" novalidate>
+      <div class="clave-dibujo" id="clave-dibujo" aria-hidden="true"></div>
+      <label for="clave">Escribe la clave</label>
+      <input id="clave" type="text" autocomplete="off" autocapitalize="none" autocorrect="off" spellcheck="false" aria-describedby="clave-error">
+      <p id="clave-error" role="alert"></p>
+      <button class="boton" type="submit">Abrir calendario</button>
+    </form>
+  </main>
+
+  <main id="calendario" class="pantalla calendario" aria-label="Calendario" hidden>
+    <div class="fila fila-1"></div>
+    <div class="fila fila-2"><div class="col-izq"></div><div class="col-der"></div></div>
+    <div class="fila fila-3"></div>
+  </main>
+
+  <dialog id="ventana" aria-labelledby="ventana-titulo">
+    <header>
+      <h2 id="ventana-titulo" tabindex="-1" autofocus></h2>
+      <button id="cerrar" type="button" aria-label="Cerrar">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5 19 19M19 5 5 19"/></svg>
+      </button>
+    </header>
+    <div id="ventana-contenido"></div>
+  </dialog>
+
+  <div id="aviso" role="status" aria-live="polite"></div>
+
+  <script src="js/config.js"></script>
+  <script src="js/ilustraciones.js"></script>
+  <script src="js/cifrado.js"></script>
+  <script src="js/dia1.js"></script>
+  <script src="js/dias.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

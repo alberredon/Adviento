@@ -1,0 +1,11 @@
+{
+  "name": "Calendario de adviento",
+  "short_name": "Adviento",
+  "lang": "es",
+  "start_url": "./index.html",
+  "display": "fullscreen",
+  "orientation": "portrait",
+  "background_color": "#f5f3ee",
+  "theme_color": "#f5f3ee",
+  "icons": [{ "src": "icono.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
