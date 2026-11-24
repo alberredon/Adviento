@@ -14,5 +14,5 @@ const DIAS = [
   { dia: 3, hueco: ".col-izq", fondo: "#476356", texto: "#f2b7bc", dibujo: DIBUJOS.regalos },
   { dia: 4, hueco: ".col-der", fondo: "#f2b7bc", texto: "#26233f", dibujo: DIBUJOS.corona },
   { dia: 5, hueco: ".col-der", fondo: "#a9ab88", texto: "#1d1b2e", dibujo: DIBUJOS.roscon },
-  { dia: 6, hueco: ".fila-3", fondo: "#d6c5b5", texto: "#34503f", dibujo: DIBUJOS.reyes },
+  { dia: 6, hueco: ".fila-3", fondo: "#d6c5b5", texto: "#34503f", dibujo: DIBUJOS.reyes, abrir: abrirGuardia },
 ].map((d) => ({ abrir: contenidoProvisional(d.dibujo), ...d }));

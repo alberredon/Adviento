@@ -212,16 +212,20 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .esc-capa h3 { margin: 0; font: 400 clamp(28px, 8.4vw, 38px)/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; }
 .esc-capa p { margin: 0; max-width: 300px; font-size: 18px; font-weight: 700; line-height: 1.4; }
 .esc-capa .esc-reto { color: #8f3233; font: 400 20px/1.3 "Abril Fatface", Georgia, serif; text-wrap: balance; }
-.esc-capa .esc-heroe { height: clamp(70px, 46vh - 170px, 210px); }
+.esc-capa .esc-heroe { height: clamp(64px, 46vh - 225px, 210px); }
 .esc-capa .esc-heroe svg { height: 100%; width: auto; }
 @media (max-height: 600px) {
   .esc-capa { gap: 8px; padding: 12px; }
-  .esc-capa .esc-heroe { height: 15vh; }
+  .esc-capa .esc-heroe { height: 12vh; }
+  .esc-capa .boton { min-height: 48px; }
   .esc-capa h3 { font-size: 26px; }
   .esc-capa p { font-size: 15px; line-height: 1.3; }
   .esc-capa .esc-reto { font-size: 16px; }
 }
 .esc-capa .boton { margin: 0; padding: 10px 24px; font-family: "Abril Fatface", Georgia, serif; line-height: 1.2; }
+.esc-casco { display: flex; padding: 4px; border-radius: 16px; background: var(--arena); }
+.esc-casco button { min-height: 44px; padding: 0 16px; border-radius: 12px; background: transparent; font: 700 16px "Nunito", sans-serif; }
+.esc-casco button[aria-pressed="true"] { background: #fff; color: #8f3233; }
 .esc-capa .secundario { background: transparent; color: var(--tinta); text-decoration: underline; font: 700 16px "Nunito", sans-serif; min-height: 44px; padding: 0 16px; }
 .esc-video { padding: 0; background: #14121c; color: #fff; justify-content: flex-end; }
 .esc-video video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
@@ -243,6 +247,57 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 @keyframes esc-vale { from { opacity: 0; transform: translate(-50%, 10%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes esc-confeti { to { transform: translateY(110vh) rotate(720deg); } }
 @media (prefers-reduced-motion: reduce) { .vale { opacity: 1; } .caja-regalo, .confeti { visibility: hidden; } }
+
+/* ---------- Día 6: la guardia ---------- */
+.guardia { background: #1b2244; }
+.guardia .esc-capa { color: var(--tinta); }
+.guardia .g-noche { background: linear-gradient(#141a38, #2c3566 70%, #3d4379); color: #fff; }
+.guardia .g-noche h3 { color: #fff; }
+.guardia .g-inicio { background: var(--verde); color: #fff; }
+.guardia .g-inicio h3 { color: var(--rosa); }
+.guardia .g-inicio .secundario { color: #fff; }
+.guardia .g-regalo { width: min(46vw, 24vh, 190px); }
+.guardia .g-regalo svg { width: 100%; height: auto; display: block; }
+.guardia .g-llamada { background: linear-gradient(#2a2d3d, #14151d); color: #fff; justify-content: space-between; padding: 8% 20px 24px; overflow: hidden; }
+.g-llamada .g-quien { display: flex; flex-direction: column; align-items: center; gap: 12px; }
+.g-llamada .g-avatar { width: min(34vw, 20vh, 140px); animation: g-sonar .9s ease-in-out infinite; }
+.g-llamada .g-avatar svg { width: 100%; height: auto; display: block; }
+.g-llamada h3 { color: #fff; }
+.g-zona { position: relative; width: 100%; flex: 1; min-height: 170px; }
+.g-zona button { position: absolute; bottom: 12px; width: 84px; height: 84px; border-radius: 50%; display: grid; place-items: center; color: #fff; font: 700 15px "Nunito", sans-serif; touch-action: none; }
+.g-zona svg { width: 34px; height: 34px; }
+.g-colgar { left: calc(50% - 116px); background: #d83a3a; transition: left .22s ease-out, top .22s ease-out; }
+.g-coger { left: calc(50% + 32px); background: #22a35a; animation: latir 1.2s ease-in-out infinite; }
+@keyframes g-sonar { 25% { transform: rotate(-5deg); } 75% { transform: rotate(5deg); } }
+.guardia .g-chat { background: #f5f3ee; justify-content: flex-start; padding: 14px 14px 16px; gap: 10px; }
+.g-chat .g-mensajes { flex: 1; min-height: 0; width: 100%; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; scrollbar-width: none; }
+.g-chat .g-mensajes::before { content: ""; margin-top: auto; }
+.g-globo { max-width: 82%; padding: 10px 14px; border-radius: 18px; font-size: 16px; font-weight: 700; line-height: 1.35; text-align: left; animation: abrir .22s ease-out; }
+.g-globo.s { align-self: flex-start; background: #fff; border: 1px solid var(--arena); border-bottom-left-radius: 5px; }
+.g-globo.e { align-self: flex-end; background: var(--verde); color: #fff; border-bottom-right-radius: 5px; }
+.g-globo.fin { align-self: center; text-align: center; max-width: 100%; background: none; color: #8f3233; font: 400 20px/1.3 "Abril Fatface", Georgia, serif; }
+.g-hora { font: 700 clamp(60px, 22vw, 96px)/1 "Courier New", monospace; letter-spacing: -2px; color: #ff6a5e; background: #180f14; padding: 8px 20px; border-radius: 16px; font-variant-numeric: tabular-nums; }
+.g-sala { display: flex; align-items: flex-end; justify-content: center; gap: 10px; height: clamp(90px, 30vh, 240px); }
+.g-sala svg { height: 100%; width: auto; }
+.g-sala .g-borracho { height: 100%; animation: g-balanceo 1.6s ease-in-out infinite; transform-origin: 50% 100%; }
+.g-sala .g-alta { height: 92%; }
+@keyframes g-balanceo { 0%, 100% { transform: rotate(-7deg); } 50% { transform: rotate(7deg); } }
+.g-alarma { animation: g-alarma .7s steps(2) infinite; }
+@keyframes g-alarma { 50% { background: #7d1a1f; } }
+.g-panel { position: absolute; left: 0; right: 0; bottom: 0; padding: 12px; display: flex; gap: 10px; justify-content: center; }
+.g-panel button { flex: 1; max-width: 220px; min-height: 60px; border-radius: 18px; background: var(--crema); color: #8f3233; font: 400 20px "Abril Fatface", Georgia, serif; touch-action: none; }
+.g-panel button:active { background: var(--rosa); }
+.g-texto { position: absolute; left: 0; right: 0; top: 0; padding: 12px 34px 0 14px; font-size: 17px; font-weight: 700; line-height: 1.3; text-align: center; pointer-events: none; }
+.g-texto span { display: inline-block; padding: 8px 14px; border-radius: 14px; background: rgb(255 255 255 / .92); color: var(--tinta); }
+.guardia .g-alba { background: linear-gradient(#7aa6d8, #f6c9a8 62%, #f2b7bc); overflow: hidden; }
+.g-sobre { width: min(320px, 100%); padding: 22px 18px; border-radius: 18px; background: var(--crema); color: var(--tinta); text-align: center; animation: g-mensaje .5s cubic-bezier(.16,1,.3,1); }
+.g-sobre p { margin: 0 auto 12px; font-size: 17px; }
+.g-sobre h3 { margin: 4px 0 6px; font: 400 36px/1.3 "Pacifico", cursive; color: var(--rojo); }
+.g-sobre .firma { font: 400 22px "Abril Fatface", Georgia, serif; margin: 0; }
+.g-aviso-sms { display: flex; align-items: center; gap: 12px; width: min(320px, 100%); min-height: 64px; padding: 12px 16px; border-radius: 18px; background: #fff; color: var(--tinta); text-align: left; font: 700 16px/1.3 "Nunito", sans-serif; animation: g-mensaje .5s cubic-bezier(.16,1,.3,1); }
+.g-aviso-sms svg { width: 34px; flex: none; }
+@keyframes g-mensaje { from { opacity: 0; transform: translateY(-24px); } }
+@media (max-height: 600px) { .g-globo { font-size: 14px; padding: 7px 12px; } .g-sobre { padding: 14px; } .g-sobre p { font-size: 15px; margin-bottom: 8px; } .g-sobre h3 { font-size: 28px; } .g-zona button { width: 70px; height: 70px; } }
 
 #aviso {
   position: fixed;

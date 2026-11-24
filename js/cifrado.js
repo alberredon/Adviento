@@ -33,8 +33,8 @@ const Cifrado = (() => {
     const r = await bajar(`datos/${nombre}.bin`, opciones);
     return descifrar(nombre, new Uint8Array(await r.arrayBuffer()), k);
   }
-  async function leerSeguro(nombre) {
-    const datos = (await leer(nombre, llaves)) || (await leer(nombre, llaves, { cache: "reload" }));
+  async function leerSeguro(nombre, opciones) {
+    const datos = (await leer(nombre, llaves, opciones)) || (await leer(nombre, llaves, { cache: "reload" }));
     if (!datos) throw new Error(`No se puede descifrar ${nombre}`);
     return datos;
   }
@@ -69,7 +69,7 @@ const Cifrado = (() => {
       } catch { return "red"; }
     },
     async json(nombre) {
-      return JSON.parse(new TextDecoder().decode(await leerSeguro(nombre)));
+      return JSON.parse(new TextDecoder().decode(await leerSeguro(nombre, { cache: "no-cache" })));
     },
     async imagen(nombre) {
       return URL.createObjectURL(new Blob([await leerSeguro(nombre)], { type: "image/webp" }));

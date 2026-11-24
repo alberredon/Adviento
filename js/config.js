@@ -7,5 +7,5 @@ const CONFIG = {
   // false: cada caja se abre SOLO su día. true: también los días posteriores.
   permitirDiasPasados: false,
   // PRUEBAS: cajas que se pueden abrir antes de su día. Dejar en [] al terminar.
-  diasDePrueba: [1, 2],
+  diasDePrueba: [1, 2, 6],
 };

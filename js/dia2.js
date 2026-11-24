@@ -106,6 +106,7 @@ const abrirEscalada = (() => {
   const CARPETA = "dia2/";
   const PERDIDAS = "adviento-dia2-intentos";
   const GANADO = "adviento-dia2-ganado";
+  const SIN_CASCO = "adviento-dia2-sin-casco";
   const COLORES = [["#f5c518", "#b98a00"], ["#7a4fc9", "#4c2c8e"], ["#22a35a", "#12683a"], ["#f0568c", "#a82458"],
                    ["#2b8fe0", "#155a96"], ["#f47a2a", "#a9480d"], ["#e23b3b", "#931c1c"]];
   const leer = (k) => { try { return Number(localStorage.getItem(k)) || 0; } catch { return 0; } };
@@ -250,20 +251,22 @@ const abrirEscalada = (() => {
     const c = lienzo.getContext("2d");
     const tactil = matchMedia("(pointer: coarse)").matches;
     const urls = [];
-    const sprites = {};
+    const todos = { casco: {}, sin: {} };
+    let estilo = leer(SIN_CASCO) ? "sin" : "casco";
+    let sprites = todos[estilo];
     const sonidos = crearSonidos();
     let cerrado = false, cuadro = 0, juego = null, capa = null, ultimo = 0, resto = 0;
     const W = Escalada.ANCHO;
     let H = 600;
 
-    const imagenes = Promise.all(Object.entries(datos.sprites).map(([n, s]) => new Promise((ok, mal) => {
+    const imagenes = Promise.all(Object.entries(datos.sprites).flatMap(([e, grupo]) => Object.entries(grupo).map(([n, s]) => new Promise((ok, mal) => {
       const u = URL.createObjectURL(new Blob([s], { type: "image/svg+xml" }));
       urls.push(u);
       const img = new Image();
       img.onload = () => ok(); img.onerror = mal;
       img.src = u;
-      sprites[n] = img;
-    })));
+      todos[e][n] = img;
+    }))));
     const videos = {};
     const pedirVideo = (n) => (videos[n] ||= Cifrado.video(CARPETA + n).then((u) => {
       if (cerrado) URL.revokeObjectURL(u); else urls.push(u);
@@ -410,13 +413,25 @@ const abrirEscalada = (() => {
     }
     function portada() {
       const ganado = leer(GANADO);
-      const q = mostrar("", `<div class="esc-heroe" aria-hidden="true">${datos.sprites.pie}</div>
+      const q = mostrar("", `<div class="esc-heroe" aria-hidden="true"></div>
+        <div class="esc-casco" role="group" aria-label="Elegir equipo">
+          <button type="button" data-e="casco">Con casco</button><button type="button" data-e="sin">Sin casco</button>
+        </div>
         <h3>¡A por el top!</h3>
         <p class="esc-reto">${datos.frase}</p>
         <p>${tactil ? "Inclina el móvil a los lados para moverte. También puedes tocar la izquierda o la derecha." : "Muévete con las flechas ← y →."}</p>
         <p>Cuidado: las presas con grietas se rompen.</p>
         <button type="button" class="boton">Empezar</button>
         ${ganado ? '<button type="button" class="secundario">Ver la sorpresa</button>' : ""}`);
+      const elegir = (e) => {
+        estilo = e;
+        sprites = todos[e];
+        guardar(SIN_CASCO, e === "sin" ? 1 : 0);
+        q(".esc-heroe").innerHTML = datos.sprites[e].pie;
+        capa.querySelectorAll(".esc-casco button").forEach((b) => b.setAttribute("aria-pressed", b.dataset.e === e));
+      };
+      capa.querySelectorAll(".esc-casco button").forEach((b) => b.addEventListener("click", () => elegir(b.dataset.e)));
+      elegir(estilo);
       q(".boton").addEventListener("click", async () => { sonidos.activar(); await activarSensor(); empezar(); });
       q(".secundario")?.addEventListener("click", sorpresa);
     }
