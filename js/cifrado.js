@@ -74,6 +74,7 @@ const Cifrado = (() => {
     async imagen(nombre) {
       return URL.createObjectURL(new Blob([await leerSeguro(nombre)], { type: "image/webp" }));
     },
+    datos: (nombre) => leerSeguro(nombre),
     async video(nombre) {
       return URL.createObjectURL(new Blob([await leerSeguro(nombre)], { type: "video/mp4" }));
     },
