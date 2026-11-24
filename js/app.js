@@ -96,8 +96,11 @@
     ventana.showModal();
     limpiar = d.abrir(contenido, () => ventana.close()) || null;
     if (estado(d.dia) !== "prueba") marcarAbierto(d.dia);
+    // Botón de adelantar: solo en pruebas (nunca en el día real)
+    $("#adelantar").hidden = !(limpiar?.adelantar && (estado(d.dia) === "prueba" || enLocal));
     refrescar();
   }
+  $("#adelantar").addEventListener("click", () => limpiar?.adelantar?.());
   $("#cerrar").addEventListener("click", () => ventana.close());
   function vaciar() {
     if (limpiar) limpiar();

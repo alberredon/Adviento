@@ -1,6 +1,7 @@
 {
   "version": "0.0.1",
   "configurations": [
-    { "name": "adviento", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "8137", "--bind", "127.0.0.1"], "port": 8137 }
+    { "name": "adviento", "runtimeExecutable": "python", "runtimeArgs": ["-m", "http.server", "8137", "--bind", "127.0.0.1"], "port": 8137 },
+    { "name": "encuadre", "runtimeExecutable": "python", "runtimeArgs": ["img/encuadre/servidor.py"], "port": 8138 }
   ]
 }

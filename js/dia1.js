@@ -55,7 +55,9 @@ const abrirRecap = (() => {
       console.error(e);
       aviso.textContent = "No se ha podido cargar. Comprueba la conexión y vuelve a abrir la caja.";
     });
-    return () => { cerrado = true; if (limpiar) limpiar(); };
+    const cerrarTodo = () => { cerrado = true; if (limpiar) limpiar(); };
+    cerrarTodo.adelantar = () => limpiar?.adelantar?.();
+    return cerrarTodo;
   }
 
   function montar(contenedor, cerrar, { intro: INTRO, condiciones: CONDICIONES, nota: NOTA, escenas: ESCENAS, final: FINAL }) {
@@ -211,13 +213,18 @@ const abrirRecap = (() => {
     colocar();
     addEventListener("resize", colocar);
     document.fonts?.ready.then(() => { if (raiz.isConnected) colocar(); });
-    return () => {
+    const terminar = () => {
       cerrado = true;
       observador.disconnect();
       removeEventListener("resize", colocar);
       clearTimeout(espera);
       urls.forEach((u) => URL.revokeObjectURL(u));
     };
+    terminar.adelantar = () => {
+      if (!aceptado) return actual === 0 ? ir(1) : aceptar();
+      if (actual < ultima) ir(actual + 1);
+    };
+    return terminar;
   }
 
   return abrir;

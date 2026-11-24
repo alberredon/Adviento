@@ -441,7 +441,7 @@ const abrirEscalada = (() => {
     medir();
     portada();
 
-    return () => {
+    const terminar = () => {
       cerrado = true;
       cancelAnimationFrame(cuadro);
       observador.disconnect();
@@ -456,6 +456,14 @@ const abrirEscalada = (() => {
       sonidos.cerrar();
       urls.forEach((u) => URL.revokeObjectURL(u));
     };
+    terminar.adelantar = () => {
+      sonidos.activar();
+      if (capa?.classList.contains("esc-regalo")) return;
+      if (capa?.classList.contains("esc-win")) return sorpresa();
+      cancelAnimationFrame(cuadro);
+      imagenes.then(() => { if (!cerrado) ganar(); });
+    };
+    return terminar;
   }
 
   return function abrir(contenedor) {
@@ -472,6 +480,8 @@ const abrirEscalada = (() => {
       console.error(e);
       aviso.textContent = "No se ha podido cargar. Comprueba la conexión y vuelve a abrir la caja.";
     });
-    return () => { cerrado = true; if (limpiar) limpiar(); };
+    const cerrarTodo = () => { cerrado = true; if (limpiar) limpiar(); };
+    cerrarTodo.adelantar = () => limpiar?.adelantar?.();
+    return cerrarTodo;
   };
 })();

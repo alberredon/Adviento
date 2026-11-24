@@ -197,14 +197,6 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       q(".boton").addEventListener("click", siguiente);
       q(".boton").focus({ preventScroll: true });
     }
-    function corazones(c, n, total, x, y) {
-      for (let i = 0; i < total; i++) {
-        c.fillStyle = i < n ? "#e0493f" : "rgb(0 0 0 / .2)";
-        c.beginPath();
-        c.arc(x + i * 24 - 4, y, 5, 0, 7); c.arc(x + i * 24 + 4, y, 5, 0, 7); c.fill();
-        c.beginPath(); c.moveTo(x + i * 24 - 8.6, y + 2); c.lineTo(x + i * 24, y + 12); c.lineTo(x + i * 24 + 8.6, y + 2); c.fill();
-      }
-    }
     function barra(c, f, H) {
       c.fillStyle = "rgb(38 35 63 / .25)"; c.beginPath(); c.roundRect(W - 14, 14, 6, H - 110, 3); c.fill();
       c.fillStyle = "#b14645"; c.beginPath(); c.roundRect(W - 14, 14 + (H - 110) * (1 - f), 6, (H - 110) * f, 3); c.fill();
@@ -214,7 +206,12 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
     function inicio() {
       const q = capa("g-inicio", `<div class="g-regalo" aria-hidden="true">${DIBUJOS.regalos}</div><h3>El regalo final</h3>
         <p>Has llegado al día de Reyes.</p><button type="button" class="boton">Descubrir el regalo final</button>`);
-      q(".boton").addEventListener("click", () => { sonidos.activar(); siguiente(); });
+      q(".boton").addEventListener("click", () => {
+        sonidos.activar();
+        raiz.replaceChildren();
+        capa("esc-regalo", '<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>');
+        dentroDe(2000, siguiente); // justo al abrirse, entra la llamada
+      });
     }
 
     // ---------- 1. Llamada ----------
@@ -529,7 +526,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       "Toca gastroscopia para sacar la figurita."] });
     const caso3 = () => caso({ desde: "5:20", hora: "7:55", titulo: "Cinco minutos y a casa…", quien: "", boton: "¡Coger el carro!", alarma: "¡Parada!", frases: [
       "Todo tranquilo. Parece que la noche por fin va a terminar.",
-      "¡Papá Noel está en parada en la habitación 6! ¡Corre!"] });
+      "¡Papá Noel está en parada en la 6! El elfo ya ha empezado las compresiones: ¡trae el carro!"] });
 
     // ---------- 5. Vía ----------
     function via() {
@@ -694,6 +691,8 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       mirar: '<circle cx="24" cy="24" r="15" class="late"/><path d="M35 35l14 14"/>',
       orina: '<path d="M14 12h28l-3 36H17z"/><path d="M10 12h36"/><path d="M17 28h22l-2 17H19z" class="sube"/>',
       gota: '<path d="M28 6c10 14 15 20 15 28a15 15 0 0 1-30 0c0-8 5-14 15-28z" class="late"/>',
+      rx: '<path d="M10 6h36v44H10z"/><path d="M28 12v32M20 18c4-3 12-3 16 0M18 26c5-3 15-3 20 0M18 34c5-3 15-3 20 0" class="late"/>',
+      reloj: '<path d="M10 10h36v38H10zM10 20h36M19 5v9M37 5v9"/><path d="M19 29h4M33 29h4M19 39h4M33 39h4" class="late"/>',
       onda: '<path d="M4 30h8l5-16 8 32 7-26 5 14 4-4h11" class="late"/>',
     };
     const icono = (n) => `<svg viewBox="0 0 56 56" aria-hidden="true">${ICONOS[n]}</svg>`;
@@ -789,7 +788,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
     function gastro() {
       // Empieza muy rápida y se frena con cada golpe
       const LARGO = 4400, TRAMO = 1100;
-      const g = raiz.estado = { fase: "bajar", s: 0, x: W / 2, vidas: 3, t: 0, golpe: 0, choques: 0, pinzazos: 0, px: W / 2, py: 0, pinza: "quieta", cogida: null };
+      const g = raiz.estado = { fase: "bajar", s: 0, x: W / 2, t: 0, golpe: 0, inmune: 0, choques: 0, pinzazos: 0, px: W / 2, py: 0, pinza: "quieta", cogida: null };
       const centro = (s) => W / 2 + Math.min(1, s / 200) * (Math.sin(s / 150) * 66 + Math.sin(s / 64 + 1) * 30);
       const velocidad = () => Math.max(95, 215 * 0.9 ** g.choques);
       const radio = (s) => 56 - 12 * Math.min(1, s / LARGO) + 6 * Math.sin(g.t * 2.2 - s / 80); // se contrae al tragar
@@ -819,20 +818,19 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       function bajar(dt, c, H) {
         const yTip = H * 0.36;
         if (g.golpe <= 0) g.s += velocidad() * dt;
+        g.inmune = Math.max(0, g.inmune - dt);
         const r = radio(g.s), d = g.x - centro(g.s);
-        if (Math.abs(d) > r - 11 && g.golpe <= 0) {
-          g.vidas--;
+        if (g.inmune > 0) g.x = centro(g.s) + limitar(d, 12 - r, r - 12);
+        else if (Math.abs(d) > r - 11) { // un toque: vuelta al punto de control y 2,5 s sin poder chocar
           g.choques++;
-          g.golpe = 0.8;
+          g.golpe = 0.7;
+          g.inmune = 0.7 + 2.5;
           sonidos.mal();
+          g.s = Math.floor(g.s / TRAMO) * TRAMO;
           g.x = centro(g.s);
           arrastre = null;
-          if (g.vidas <= 0) {
-            g.vidas = 3;
-            g.s = Math.floor(g.s / TRAMO) * TRAMO;
-            g.x = centro(g.s);
-            rotulo("¡Arcada! Vuelves un poco atrás");
-          } else rotulo("«¡Uaaagh!» Cuidado con las paredes");
+          rotulo("¡Arcada! Vuelves un poco atrás, ahora más despacio");
+          dentroDe(2600, () => { if (g.fase === "bajar") rotulo(""); });
         }
         if (g.s >= LARGO) return estomago();
         c.fillStyle = "#a8434a"; c.fillRect(0, 0, W, H);
@@ -849,13 +847,13 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
           const s = k * 60, y = s - g.s + yTip, w = radio(s);
           c.beginPath(); c.moveTo(centro(s) - w, y); c.quadraticCurveTo(centro(s), y + 16, centro(s) + w, y); c.stroke();
         }
+        if (g.inmune > 0) c.globalAlpha = Math.sin(g.t * 22) > 0 ? 1 : 0.25; // parpadea mientras es invulnerable
         c.strokeStyle = "#26282f"; c.lineWidth = 15; c.lineCap = "round"; c.lineJoin = "round"; c.beginPath();
         for (let y = -20; y <= yTip - 14; y += 12) { const f = Math.max(0, 1 - (yTip - y) / 150); c.lineTo(centro(g.s + y - yTip) * (1 - f) + g.x * f, y); }
         c.lineTo(g.x, yTip - 4); c.stroke();
         c.fillStyle = "#3b4252"; c.beginPath(); c.arc(g.x, yTip, 11, 0, 7); c.fill();
         c.fillStyle = "#fff3c4"; c.beginPath(); c.arc(g.x, yTip + 2, 5.5, 0, 7); c.fill();
         c.restore();
-        corazones(c, g.vidas, 3, 26, H - 34);
         barra(c, g.s / LARGO, H);
       }
       function digerir(dt, c, H) {
@@ -985,21 +983,20 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         c.fillStyle = "#e9f0f2"; c.fillRect(0, 0, W, suelo);
         c.fillStyle = "#cfe3da"; c.fillRect(0, suelo - 92, W, 92);
         c.fillStyle = "#78b793"; c.fillRect(0, suelo - 96, W, 6);
-        for (let i = -1; i < 3; i++) { // puertas
-          const n = Math.floor(g.d * 0.8 / 210) + i + 1, x = n * 210 - g.d * 0.8;
-          c.fillStyle = "#a7c4d1"; c.fillRect(x + 20, suelo - 205, 92, 205);
-          c.fillStyle = "#dbe9ef"; c.fillRect(x + 36, suelo - 188, 60, 62);
-          c.fillStyle = "#7b8794"; c.beginPath(); c.arc(x + 100, suelo - 90, 5, 0, 7); c.fill();
-          c.fillStyle = "#476356"; c.font = '400 18px "Abril Fatface", Georgia, serif'; c.textAlign = "center"; c.fillText(String(((n % 5) + 5) % 5 + 1), x + 66, suelo - 214);
-          c.fillStyle = "#fff8dc"; c.fillRect(x + 130, 64, 70, 12);
+        for (let j = Math.ceil((META + 130 - g.d) / 210); j >= -1; j--) { // puertas; la última es la 6
+          const x = META + 130 - j * 210 - g.d;
+          if (x < -130 || x > W + 20) continue;
+          const n = j <= 0 ? 6 - j : 5 - ((j - 1) % 5);
+          c.fillStyle = "#86a9b8"; c.fillRect(x - 6, suelo - 211, 104, 211);
+          c.fillStyle = "#a7c4d1"; c.fillRect(x, suelo - 205, 92, 205);
+          c.fillStyle = "#dbe9ef"; c.fillRect(x + 16, suelo - 188, 60, 62);
+          c.fillStyle = "#56717e"; c.beginPath(); c.arc(x + 80, suelo - 90, 5, 0, 7); c.fill();
+          c.fillStyle = "#476356"; c.font = '400 24px "Abril Fatface", Georgia, serif'; c.textAlign = "center"; c.fillText(String(n), x + 46, suelo - 220);
+          if (j === 0) { c.fillStyle = Math.sin(g.t * 9) > 0 ? "#ff4b3e" : "#7d2a26"; c.beginPath(); c.arc(x + 46, suelo - 256, 9, 0, 7); c.fill(); }
+          c.fillStyle = "#fff8dc"; c.fillRect(x + 120, 64, 60, 12);
         }
         c.fillStyle = "#b9c8cd"; c.fillRect(0, suelo, W, H - suelo);
         c.fillStyle = "#a6b7bd"; for (let i = 0; i < 8; i++) c.fillRect(i * 60 - (g.d % 60), suelo + 14, 30, 5);
-        if (META - g.d < W) { // puerta de la habitación 6
-          const x = META - g.d + 130;
-          c.fillStyle = "#c93a3a"; c.fillRect(x, suelo - 220, 110, 220);
-          c.fillStyle = "#fff"; c.font = '400 54px "Abril Fatface", Georgia, serif'; c.textAlign = "center"; c.fillText("6", x + 55, suelo - 110);
-        }
         for (const o of g.obs) {
           const x = o.x - g.d;
           if (o.tipo === "camilla") {
@@ -1034,10 +1031,12 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       usarTeclas((k, suelta) => { if (!suelta && (k === "ArrowUp" || k === " ")) saltar(); });
     }
 
-    // ---------- 10. Reanimación: compresiones, ritmo, descarga y compresiones ----------
+    // ---------- 10. Reanimación ----------
+    // Como en planta: un compañero comprime mientras llega el carro, se descarga cuanto antes
+    // si el ritmo es desfibrilable y se sigue comprimiendo de inmediato
     function desfibrilador() {
-      const g = raiz.estado = { fase: "rcp", ciclo: 1, t: 0, buenas: 0, ultima: 0, lpm: 0, hunde: 0, carga: 0, cargando: false, flash: 0, salta: 0, vivo: false, manos: [], descargas: 0 };
-      const META = { 1: 30, 2: 15 };
+      const g = raiz.estado = { fase: "llegada", t: 0, buenas: 0, toques: [], lpm: 0, hunde: 0, carga: 0, cargando: false, flash: 0, salta: 0, vivo: false, manos: [], descargas: 0 };
+      const META = 30;
       const ZONA = [0.66, 0.88];
       let pararTono = () => {};
       let pararPlano = cada(1250, sonidos.plano);
@@ -1045,22 +1044,29 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
 
       function comprimir() {
         if (g.fase !== "rcp") return;
-        const ahora = performance.now(), ms = ahora - g.ultima;
-        g.ultima = ahora;
+        const ahora = performance.now();
+        if (g.toques.length && ahora - g.toques[g.toques.length - 1] > 1500) g.toques = [];
+        g.toques.push(ahora);
+        if (g.toques.length > 4) g.toques.shift();
         g.hunde = 1;
         sonidos.golpe();
-        if (ms > 1500) { g.lpm = 0; return; }
-        g.lpm = 60000 / ms;
+        const n = g.toques.length - 1;
+        if (!n) { g.lpm = 0; return; }
+        g.lpm = 60000 * n / (ahora - g.toques[0]); // promedio de las cuatro últimas pulsaciones
         if (g.lpm >= 94 && g.lpm <= 128) {
           g.buenas++;
-          rotulo(`¡Bien! ${Math.min(g.buenas, META[g.ciclo])} de ${META[g.ciclo]}`);
+          rotulo(`¡Bien! ${Math.min(g.buenas, META)} de ${META}`);
         } else rotulo(g.lpm < 94 ? "Más rápido: entre 100 y 120 por minuto" : "Más despacio: deja que se expanda el tórax");
-        if (g.buenas >= META[g.ciclo]) return g.ciclo === 1 ? analizar() : recuperar();
+        if (g.buenas >= META) recuperar();
+      }
+      function llegada() {
+        rotulo("El elfo sigue comprimiendo mientras pones los parches");
+        panel('<button type="button">Parar y ver el ritmo</button>')("button").addEventListener("click", analizar);
       }
       function rcp(texto) {
         g.fase = "rcp";
         g.buenas = 0;
-        g.ultima = 0;
+        g.toques = [];
         g.lpm = 0;
         rotulo(texto);
         quitar();
@@ -1075,7 +1081,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         pararTono();
         pararPlano();
         quitar();
-        rotulo("Para y mira el monitor. ¿Qué ritmo es?");
+        rotulo("Nadie toca al paciente. ¿Qué ritmo es?");
         const d = panel('<button type="button" data-r="asistolia">Asistolia</button><button type="button" data-r="fv">Fibrilación ventricular</button><button type="button" data-r="sinusal">Sinusal</button>');
         d("button").parentElement.classList.add("g-tres");
         raiz.querySelectorAll(".g-panel button").forEach((b) => b.addEventListener("click", () => {
@@ -1088,7 +1094,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       function cargar() {
         g.fase = "carga";
         g.carga = 0;
-        rotulo("Desfibrilable. Mantén para cargar y suelta en lo verde");
+        rotulo("Desfibrilable. El elfo comprime mientras cargas: suelta en lo verde");
         quitar();
         const b = panel('<button type="button">Mantener para cargar</button>')("button");
         b.addEventListener("pointerdown", (e) => { e.preventDefault(); if (g.fase === "carga") { g.cargando = true; g.carga = 0; } });
@@ -1133,7 +1139,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         quitar();
         sonidos.descarga();
         rotulo("¡Descarga!");
-        dentroDe(1300, () => { g.ciclo = 2; g.manos = []; rcp("Sigue con las compresiones sin perder tiempo"); });
+        dentroDe(1300, () => { g.manos = []; rcp("¡Compresiones ya! Al compás: 100-120 por minuto"); });
       }
       function recuperar() {
         g.fase = "fin";
@@ -1151,6 +1157,8 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         g.flash = Math.max(0, g.flash - dt * 2.4);
         g.salta = Math.max(0, g.salta - dt * 2);
         g.hunde = Math.max(0, g.hunde - dt * 5);
+        const elfoComprime = g.fase === "llegada" || g.fase === "carga";
+        if (elfoComprime && Math.floor(g.t / 0.545) !== Math.floor((g.t - dt) / 0.545)) { g.hunde = 1; sonidos.golpe(); }
         g.pulso = Math.max(0, (g.pulso || 0) - dt * 5);
         if (g.cargando) {
           g.carga += dt * 0.62;
@@ -1169,7 +1177,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
           const k = x + g.t * 110, f = (k % 92) / 92;
           let y;
           if (g.vivo) y = f > 0.4 && f < 0.48 ? -32 : f >= 0.48 && f < 0.55 ? 22 : f > 0.7 && f < 0.82 ? -7 : 0;
-          else if (g.fase === "rcp") y = 20 * Math.sin(k / 13) * (0.4 + g.hunde); // artefacto de las compresiones
+          else if (g.fase === "rcp" || elfoComprime) y = 20 * Math.sin(k / 13) * (0.4 + g.hunde); // artefacto de las compresiones
           else if (g.flash > 0 || g.fase === "espera") y = g.salta > 0.5 ? 0 : 1.5 * Math.sin(k / 9);
           else y = 15 * Math.sin(k / 6.1) + 11 * Math.sin(k / 3.7 + 1) + 8 * Math.sin(k / 9.3);
           c.lineTo(36 + x, my + mh / 2 + y * amp);
@@ -1185,6 +1193,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
           const h = 150 * tam, w = h * 178 / 272;
           c.drawImage(img.agacha, W / 2 - w / 2 + 6, cama - 78 * tam - h * 0.86 + g.hunde * 9, w, h);
         }
+        if (elfoComprime) { c.save(); c.translate(0, g.hunde * 9); c.scale(1, 1); ayudante(c, { q: "elfo", x: W / 2 + 6 }, cama - 122 * tam); c.restore(); }
         for (const m of g.manos) {
           m.d += ((m.toca ? 0 : 46) - m.d) * Math.min(1, dt * 9);
           m.chispa = Math.max(0, (m.chispa || 0) - dt);
@@ -1243,6 +1252,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       for (const t of ["pointerup", "pointercancel"]) alEvento(window, t, soltar);
       usarTeclas((k, suelta) => {
         if (k === " " && g.fase === "rcp" && !suelta) comprimir();
+        if (k === " " && g.fase === "llegada" && !suelta) return analizar();
         if (k === " " && g.fase === "carga") { if (suelta) soltar(); else { g.cargando = true; g.carga = 0; } }
         if (suelta || g.fase !== "fuera") return;
         if (k === "ArrowLeft") apartar(66);
@@ -1250,7 +1260,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         if (k === "ArrowRight") apartar(296);
         if (k === " ") descargar();
       });
-      rcp("¡Sin pulso! Comprime al compás: 100-120 por minuto");
+      llegada();
     }
 
     // ---------- 11. Final ----------
@@ -1288,12 +1298,19 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
     }
     imagenes.then(() => { if (!cerrado) arrancar(); });
 
-    return () => {
+    const terminar = () => {
       cerrado = true;
       limpiarEscena();
       sonidos.cerrar();
       urls.forEach((u) => URL.revokeObjectURL(u));
     };
+    terminar.adelantar = () => {
+      if (!escena) return;
+      sonidos.activar();
+      if (escena.n < ESCENAS.length - 1) return ir(escena.n + 1);
+      if (!raiz.querySelector(".g-sobre")) raiz.querySelector(".g-aviso-sms")?.click();
+    };
+    return terminar;
   }
 
   return function abrir(contenedor) {
@@ -1310,6 +1327,8 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       console.error(e);
       aviso.textContent = "No se ha podido cargar. Comprueba la conexión y vuelve a abrir la caja.";
     });
-    return () => { cerrado = true; if (limpiar) limpiar(); };
+    const cerrarTodo = () => { cerrado = true; if (limpiar) limpiar(); };
+    cerrarTodo.adelantar = () => limpiar?.adelantar?.();
+    return cerrarTodo;
   };
 })();

@@ -147,6 +147,9 @@ dialog::backdrop { background: var(--fondo); }
 @keyframes abrir { from { opacity: 0; transform: scale(.96); } }
 dialog header { display: flex; justify-content: space-between; align-items: center; }
 dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
+#ventana h2 { flex: 1; }
+#adelantar { width: 48px; height: 48px; margin-right: 8px; border-radius: 16px; background: var(--fondo); display: grid; place-items: center; }
+#adelantar svg { width: 22px; fill: var(--tinta); }
 #cerrar { width: 48px; height: 48px; border-radius: 16px; background: var(--fondo); display: grid; place-items: center; }
 #cerrar svg { width: 22px; stroke: var(--tinta); stroke-width: 3; stroke-linecap: round; }
 #ventana-contenido { flex: 1; min-height: 0; overflow: auto; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 20px; }
@@ -194,7 +197,7 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 @media (max-height: 600px) {
   dialog { padding-top: max(8px, env(safe-area-inset-top)); padding-bottom: max(8px, env(safe-area-inset-bottom)); }
   dialog h2 { font-size: 24px; }
-  #cerrar { width: 44px; height: 44px; }
+  #cerrar, #adelantar { width: 44px; height: 44px; }
   .recap-progreso { margin: 6px 0 8px; }
   .recap-hoja { gap: 8px; }
   .recap-texto { min-height: 2.6em; font-size: 16px; }
@@ -247,6 +250,36 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 @keyframes esc-vale { from { opacity: 0; transform: translate(-50%, 10%) scale(.4); } to { opacity: 1; transform: translate(-50%, -50%) scale(1); } }
 @keyframes esc-confeti { to { transform: translateY(110vh) rotate(720deg); } }
 @media (prefers-reduced-motion: reduce) { .vale { opacity: 1; } .caja-regalo, .confeti { visibility: hidden; } }
+
+/* ---------- Día 3: ¿dónde estábamos? ---------- */
+.lugares { align-self: stretch; flex: 1; min-height: 0; width: 100%; margin-top: 10px; position: relative; display: flex; flex-direction: column; gap: 10px; font-family: "Nunito", system-ui, sans-serif; text-align: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.lug-arriba { display: flex; gap: 10px; flex: none; }
+.lug-marco { position: relative; flex: none; width: min(68%, 36vh); aspect-ratio: 1; border-radius: 18px; border: 4px solid var(--crema); overflow: hidden; background: #34503f; }
+.lug-foto { position: absolute; transition: all 1.1s cubic-bezier(.4,0,.2,1); }
+.lug-foto img { position: absolute; left: 0; top: 0; width: 100%; height: 100%; max-width: none; display: block; }
+.lug-lado { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; color: #fff; font-size: 16px; font-weight: 700; line-height: 1.25; }
+.lug-cuenta { font: 400 20px/1.15 "Abril Fatface", Georgia, serif; color: var(--rosa); }
+.lug-pista { margin-top: 8px; min-height: 60px; padding: 6px 4px; border-radius: 14px; background: var(--crema); color: #8f3233; font: 700 16px/1.2 "Nunito", sans-serif; }
+.lug-pista small { display: block; font-size: 13px; color: var(--tinta); }
+.lug-pista:disabled { background: #b4bfab; color: var(--tinta); cursor: default; }
+.lug-mapa { position: relative; flex: 1; min-height: 120px; border-radius: 18px; overflow: hidden; background: #c9dbd6; }
+.lug-mapa canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; cursor: crosshair; }
+.lug-zoom { position: absolute; right: 8px; top: 8px; display: grid; gap: 6px; }
+.lug-zoom button { width: 44px; height: 44px; border-radius: 14px; background: #fff; box-shadow: 0 2px 6px rgb(38 35 63 / .25); color: #8f3233; font: 700 26px/1 "Nunito", sans-serif; }
+.lug-resultado { position: absolute; left: 8px; right: 8px; bottom: 8px; margin: 0; padding: 8px 12px; border-radius: 14px; background: #fff; box-shadow: 0 2px 8px rgb(38 35 63 / .25); color: var(--tinta); font-size: 15px; font-weight: 700; line-height: 1.3; }
+.lug-resultado b { display: block; font: 400 18px/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; }
+.lugares .lug-boton { flex: none; align-self: stretch; margin: 0; min-height: 54px; font-family: "Abril Fatface", Georgia, serif; }
+.lug-boton:disabled { background: #b4bfab; color: var(--tinta); cursor: default; }
+.lugares .esc-capa { z-index: 2; inset: -1px; border-radius: 20px; }
+.lugares .lug-portada, .lugares .lug-final { background: var(--verde); color: #fff; }
+.lug-portada h3, .lug-final h3 { color: var(--rosa); }
+.lug-portada svg { height: clamp(60px, 18vh, 150px); flex: none; }
+.lug-portada .secundario { color: #fff; }
+.lug-estrellas { display: flex; gap: 4px; font-size: 40px; line-height: 1; }
+.lug-estrellas i { font-style: normal; color: #34503f; }
+.lug-estrellas .si { color: #e3cf9f; }
+.esc-capa .lug-puntos { color: #e3cf9f; }
+@media (prefers-reduced-motion: reduce) { .lug-foto { transition: none; } }
 
 /* ---------- Día 6: la guardia ---------- */
 .guardia { background: #1b2244; }
@@ -303,10 +336,11 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .g-cuarto .g-cama svg { height: 100%; width: 100%; max-height: 190px; }
 .g-cuarto .g-ficha { max-width: none; font-size: 15px; font-weight: 600; line-height: 1.3; }
 .g-cuarto .g-queja { display: grid; place-content: center; max-width: none; width: 100%; min-height: 4.4em; padding: 8px 12px; border-radius: 16px; background: #fff; font-size: 16px; line-height: 1.3; }
-.g-pruebas, .g-opciones { width: 100%; display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-.g-opciones { grid-template-columns: 1fr; }
+.g-pruebas, .g-opciones { width: 100%; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; }
+.g-pruebas { grid-auto-rows: 1fr; flex: none; } /* todos los botones iguales */
+.g-opciones { grid-template-columns: minmax(0, 1fr); }
 [hidden].g-pruebas, [hidden].g-opciones { display: none; }
-.g-pruebas button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 0 8px; min-height: 54px; padding: 5px 10px; border-radius: 14px; background: #fff; border: 2px solid #c6d6db; text-align: left; font: 700 15px/1.15 "Nunito", sans-serif; }
+.g-pruebas button { display: grid; grid-template-columns: 34px 1fr; align-items: center; gap: 0 8px; align-content: center; height: 66px; overflow: hidden; padding: 4px 10px; border-radius: 14px; background: #fff; border: 2px solid #c6d6db; text-align: left; font: 700 15px/1.15 "Nunito", sans-serif; }
 .g-pruebas svg { grid-row: span 2; width: 34px; fill: none; stroke: var(--verde); stroke-width: 3.2; stroke-linecap: round; stroke-linejoin: round; }
 .g-pruebas b { color: #8f3233; font-size: 13px; }
 .g-pruebas b:empty { display: none; }
@@ -323,7 +357,7 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .g-opciones button:disabled { opacity: .45; text-decoration: line-through; }
 .g-cuarto .boton { min-height: 50px; }
 .g-cuarto .boton:disabled { background: #b9c8cd; cursor: default; }
-@media (max-height: 600px) { .g-cuarto .g-ficha { font-size: 13px; } .g-cuarto .g-queja { font-size: 14px; min-height: 3.8em; } .g-pruebas button { min-height: 44px; font-size: 13px; } .g-pruebas b { font-size: 11px; } .g-cuarto .g-cama { flex-basis: 60px; min-height: 56px; } .g-opciones button { min-height: 42px; } .g-cuarto .boton { min-height: 44px; } }
+@media (max-height: 600px) { .g-cuarto .g-ficha { font-size: 13px; } .g-cuarto .g-queja { font-size: 14px; min-height: 3.8em; } .g-pruebas button { height: 52px; font-size: 13px; } .g-pruebas b { font-size: 11px; } .g-cuarto .g-cama { flex-basis: 60px; min-height: 56px; } .g-opciones button { min-height: 42px; } .g-cuarto .boton { min-height: 44px; } }
 .guardia .g-alba { background: linear-gradient(#7aa6d8, #f6c9a8 62%, #f2b7bc); overflow: hidden; }
 .g-sobre { width: min(320px, 100%); padding: 22px 18px; border-radius: 18px; background: var(--crema); color: var(--tinta); text-align: center; animation: g-mensaje .5s cubic-bezier(.16,1,.3,1); }
 .g-sobre p { margin: 0 auto 12px; font-size: 17px; }
