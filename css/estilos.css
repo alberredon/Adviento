@@ -260,6 +260,9 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .lug-lado { flex: 1; min-width: 0; display: flex; flex-direction: column; justify-content: center; gap: 8px; color: #fff; font-size: 16px; font-weight: 700; line-height: 1.25; }
 .lug-cuenta { font: 400 20px/1.15 "Abril Fatface", Georgia, serif; color: var(--rosa); }
 .lug-pista { margin-top: 8px; min-height: 60px; padding: 6px 4px; border-radius: 14px; background: var(--crema); color: #8f3233; font: 700 16px/1.2 "Nunito", sans-serif; }
+.lug-vidas { display: block; color: var(--rojo); font-size: 20px; line-height: 1.1; letter-spacing: 2px; }
+.lug-vidas i { font-style: normal; color: #d9c4b4; }
+.lug-pista:disabled .lug-vidas i { color: #8f9c89; }
 .lug-pista small { display: block; font-size: 13px; color: var(--tinta); }
 .lug-pista:disabled { background: #b4bfab; color: var(--tinta); cursor: default; }
 .lug-mapa { position: relative; flex: 1; min-height: 120px; border-radius: 18px; overflow: hidden; background: #c9dbd6; }
@@ -270,7 +273,9 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .lug-resultado b { display: block; font: 400 18px/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; }
 .lugares .lug-boton { flex: none; align-self: stretch; margin: 0; min-height: 54px; font-family: "Abril Fatface", Georgia, serif; }
 .lug-boton:disabled { background: #b4bfab; color: var(--tinta); cursor: default; }
-.lugares .esc-capa { z-index: 2; inset: -1px; border-radius: 20px; }
+.lugares { overflow: hidden; }
+.lugares .esc-capa { z-index: 2; }
+.lugares:has(> .esc-capa) > :not(.esc-capa) { visibility: hidden; }
 .lugares .lug-portada, .lugares .lug-final { background: var(--verde); color: #fff; }
 .lug-portada h3, .lug-final h3 { color: var(--rosa); }
 .lug-portada svg { height: clamp(60px, 18vh, 150px); flex: none; }

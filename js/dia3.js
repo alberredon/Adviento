@@ -6,7 +6,7 @@ const abrirLugares = (() => {
   const PARTIDA = "adviento-dia3-partida"; // puntos de cada foto ya jugada
   const MUNDO = 1024;                      // lado del mundo en unidades del mapa (Mercator)
   const MAXIMO = 1000;                     // puntos por foto
-  const PISTAS = [1, 1.8, 3.2];            // cuánto se aleja la foto con cada pista
+  const VIDAS = 3;                         // en toda la partida, y una por foto como mucho
   const TONOS = ["#f2b7bc", "#d6c5b5", "#b9bd94", "#fbf0e1", "#e6a79b", "#b4bfab", "#e3cf9f"];
 
   const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
@@ -259,12 +259,12 @@ const abrirLugares = (() => {
     const { fotos: FOTOS, frases: FRASES, vale: VALE } = datos;
     const urls = new Map();
     const sonidos = crearSonidos();
-    let cerrado = false, puntos = [], fase = "", pistas = 0;
+    let cerrado = false, puntos = [], usadas = [], fase = "", pistas = 0; // usadas: fotos que se han alejado
     try {
       const g = JSON.parse(localStorage.getItem(PARTIDA));
-      if (Array.isArray(g) && g.length <= FOTOS.length && g.every(Number.isFinite)) puntos = g;
+      if (g && g.puntos.length <= FOTOS.length && [...g.puntos, ...g.usadas].every(Number.isFinite)) ({ puntos, usadas } = g);
     } catch {}
-    const guardar = () => { try { localStorage.setItem(PARTIDA, JSON.stringify(puntos)); } catch {} };
+    const guardar = () => { try { localStorage.setItem(PARTIDA, JSON.stringify({ puntos, usadas })); } catch {} };
     const total = () => puntos.reduce((s, p) => s + p, 0);
 
     const raiz = document.createElement("div");
@@ -314,12 +314,14 @@ const abrirLugares = (() => {
       let w, x, y;
       if (fase === "resultado") {
         w = Math.min(1, 1 / alto) * S;
+        if (Math.abs(alto - 1) < 0.04) w = Math.max(1, 1 / alto) * S; // casi cuadrada: llena el hueco
         x = (S - w) / 2; y = (S - w * alto) / 2;
       } else {
-        const l = Math.min(f.lado * PISTAS[pistas], 1, alto);
+        const e = pistas ? f.pista : f; // con pista hay otro encuadre, elegido a mano
+        const l = Math.min(e.lado, 1, alto);
         w = S / l;
-        x = -limitar(f.x - l / 2, 0, 1 - l) * w;
-        y = -limitar(f.y * alto - l / 2, 0, alto - l) * w;
+        x = -limitar(e.x - l / 2, 0, 1 - l) * w;
+        y = -limitar(e.y * alto - l / 2, 0, alto - l) * w;
       }
       capaFoto.style.transition = suave ? "" : "none";
       // Tamaño real y no escala: así el navegador no emborrona la foto
@@ -341,14 +343,16 @@ const abrirLugares = (() => {
       q(".lug-cuenta").textContent = `Foto ${n}/${FOTOS.length}`;
       q(".lug-total").textContent = `${total().toLocaleString("es-ES")} puntos`;
       bPista.hidden = fase !== "buscar";
-      bPista.disabled = pistas >= PISTAS.length - 1;
-      bPista.innerHTML = bPista.disabled ? "Sin más pistas" : "Alejar foto<small>−20 % de puntos</small>";
+      const quedan = VIDAS - usadas.length;
+      bPista.disabled = pistas > 0 || quedan <= 0;
+      const vidas = `<span class="lug-vidas" role="img" aria-label="${quedan === 1 ? "Queda 1 vida" : `Quedan ${quedan} vidas`}">${"♥".repeat(quedan)}<i>${"♥".repeat(VIDAS - quedan)}</i></span>`;
+      bPista.innerHTML = vidas + (pistas ? "Foto alejada" : quedan <= 0 ? "Sin vidas" : "Alejar foto<small>−20 % de puntos</small>");
     }
     function jugar() {
       raiz.querySelector(".esc-capa")?.remove();
       if (puntos.length >= FOTOS.length) return final();
       fase = "buscar";
-      pistas = 0;
+      pistas = usadas.includes(puntos.length) ? 1 : 0;
       resultado.hidden = true;
       const f = foto();
       for (const [img, nombre] of [[entera, `${f.n}`], [trozo, `${f.n}-z`]]) {
@@ -401,11 +405,11 @@ const abrirLugares = (() => {
       const n = puntos.length, acabado = n >= FOTOS.length;
       const b = capa("lug-portada", `<svg viewBox="0 0 120 150" aria-hidden="true"><ellipse cx="60" cy="138" rx="30" ry="8" fill="#34503f"/><path d="M60 138C48 104 18 92 18 56a42 42 0 0 1 84 0c0 36-30 48-42 82Z" fill="#b14645"/><circle cx="60" cy="56" r="19" fill="#fbf0e1"/></svg>
         <h3>${datos.titulo}</h3><p>${datos.intro}</p>
-        <p>Mueve el mapa, acércalo con dos dedos y toca para poner la chincheta. Puedes alejar la foto a cambio de puntos.</p>
+        <p>Mueve el mapa, acércalo con dos dedos y toca para poner la chincheta. Tienes ${VIDAS} vidas para alejar la foto: una por foto como mucho, y te quita puntos.</p>
         <button type="button" class="boton">${acabado ? "Ver mi resultado" : n ? `Seguir en la foto ${n + 1}` : "Empezar"}</button>
         ${n ? '<button type="button" class="secundario">Empezar de nuevo</button>' : ""}`);
       b(".boton").addEventListener("click", () => { sonidos.activar(); jugar(); });
-      b(".secundario")?.addEventListener("click", () => { sonidos.activar(); puntos = []; guardar(); jugar(); });
+      b(".secundario")?.addEventListener("click", () => { sonidos.activar(); puntos = []; usadas = []; guardar(); jugar(); });
     }
     function final() {
       fase = "final";
@@ -434,8 +438,10 @@ const abrirLugares = (() => {
       if (fase === "buscar") { if (mapa.marcas.pin) confirmar(); } else jugar();
     });
     bPista.addEventListener("click", () => {
-      if (fase !== "buscar" || pistas >= PISTAS.length - 1) return;
-      pistas++;
+      if (fase !== "buscar" || pistas || usadas.length >= VIDAS) return;
+      pistas = 1;
+      usadas.push(puntos.length);
+      guardar();
       sonidos.activar();
       sonidos.pista();
       encuadrar(true);
