@@ -247,7 +247,7 @@ const abrirRefugio = (() => {
     const camara = new T.PerspectiveCamera(72, 1, 0.05, 60);
     camara.position.set(0, 1.55, 0);
     camara.rotation.order = "YXZ";
-    const vista = { yaw: 1.62, pitch: -0.3, fov: 72 };
+    const vista = { yaw: 0, pitch: -0.08, fov: 72 };
     const objetivo = { ...vista };
     const tocables = [];
     const reloj = new T.Clock();
@@ -1436,7 +1436,7 @@ const abrirRefugio = (() => {
         pintarArriba();
         if (++ticks % 5 === 0) guardar();
       }, 1000);
-      if (!e.hechos.fuego && e.inv.length === 0 && !e.hechos.botiquin) avisar("Brrr… Hace un frío que pela. Echa un vistazo a la mesa.", 4000);
+      if (!e.hechos.fuego && e.inv.length === 0 && !e.hechos.botiquin) avisar("Brrr… Hace un frío que pela.", 3500);
     }
 
     q(".ref-pista").addEventListener("click", () => {
