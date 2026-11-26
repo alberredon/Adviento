@@ -286,7 +286,13 @@ const abrirRuleta = (() => {
       for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${COLORES[i % COLORES.length]};animation-delay:${(0.2 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
       const b = capa("rul-final", `${papel}<h3>${datos.final.titulo}</h3>
         <div class="rul-vales">${ganados.map((i, k) => `<div class="rul-vale" style="animation-delay:${0.3 + k * 0.35}s"><span>${VALES[i].icono}</span><strong>${VALES[i].texto}</strong></div>`).join("")}</div>
-        <p>${datos.final.texto}</p><button type="button" class="secundario">Volver a tirar</button>`);
+        <p>${datos.final.texto}</p>${datos.pista ? '<button type="button" class="boton rul-ver-pista">Ver tu pista</button>' : ""}<button type="button" class="secundario">Volver a tirar</button>`);
+      b(".rul-ver-pista")?.addEventListener("click", () => {
+        const p = datos.pista;
+        const t = capa("rul-final", `<div class="pista-tarjeta"><span aria-hidden="true">🔍</span><small>${p.titulo}</small><strong>${p.texto}</strong></div><button type="button" class="secundario">Volver a tus vales</button>`);
+        sonidos.premio();
+        t(".secundario").addEventListener("click", final);
+      });
       sonidos.activar();
       sonidos.ganar();
       b(".secundario").addEventListener("click", () => {

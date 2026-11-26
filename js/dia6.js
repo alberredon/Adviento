@@ -272,7 +272,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
 
     // ---------- 3. Conducir hasta el hospital ----------
     function viaje() {
-      const META = 8400, TRAMO = 1400, L = 42, R = 11, ALTO = 14;
+      const META = 8400, L = 42, R = 11, ALTO = 14;
       const g = raiz.estado = { fase: "andar", t: 0, x: 0, y: 0, vx: 0, vy: 0, a: 0, w: 0, punto: 0, vuelcos: 0, cam: 0, vuelco: 0, quieto: 0, suelo: true };
       const suave = (v, p, q) => { const f = limitar((v - p) / (q - p), 0, 1); return f * f * (3 - 2 * f); };
       // Altura del terreno (hacia arriba); llano al salir y al llegar
@@ -321,7 +321,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         g.vuelcos++;
         g.vuelco = 1.1;
         sonidos.mal();
-        rotulo("¡Has volcado! Frena antes de las bajadas");
+        rotulo("¡Has volcado! Vuelta a empezar. Frena antes de las bajadas");
       }
       function empezar() {
         g.fase = "conducir";
@@ -345,14 +345,12 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         if (g.fase !== "andar") {
           if (g.vuelco > 0) {
             g.vuelco -= dt;
-            if (g.vuelco <= 0) { colocar(g.punto); rotulo(""); }
+            if (g.vuelco <= 0) { colocar(0); rotulo(""); }
           } else {
             const acelera = gas || teclas.ArrowRight, frena = freno || teclas.ArrowLeft;
             const acel = g.fase === "llegar" ? (g.vx > 4 ? -0.9 : 0) : (acelera ? 1 : 0) - (frena ? 0.85 : 0);
             for (let k = 0; k < 6 && g.vuelco <= 0; k++) fisica(dt / 6, acel);
             if (acelera && g.fase === "conducir" && g.t - ultimoMotor > 0.16) { ultimoMotor = g.t; sonidos.acelera(Math.abs(g.vx)); }
-            const p = Math.floor(limitar(g.x, 0, META - 1) / TRAMO) * TRAMO;
-            if (p > g.punto && g.suelo) { g.punto = p; sonidos.bien(); rotulo("¡Punto de control!"); dentroDe(1200, () => { if (g.vuelco <= 0 && !fin) rotulo(""); }); }
             // De lado y parada: se recoloca
             g.quieto = Math.abs(g.a) > 1.2 && Math.hypot(g.vx, g.vy) < 25 ? g.quieto + dt : 0;
             if (g.quieto > 1) volcar();
@@ -447,15 +445,6 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
           c.fillStyle = luz; c.fillRect(x - 46, y - alto - 46, 92, 92);
           c.fillStyle = "#1b2038"; c.fillRect(x - 2.5, y - alto, 5, alto); c.fillRect(x - 6, y - 8, 12, 8);
           c.fillStyle = "#fff3c4"; c.beginPath(); c.arc(x, y - alto - 4, 7, 0, 7); c.fill();
-        }
-        for (let s = TRAMO; s < META - 10; s += TRAMO) { // puntos de control: semáforos
-          const x = s - cx;
-          if (x < -20 || x > W + 20) continue;
-          const y = py(tierra(s)), verde = g.punto >= s;
-          c.fillStyle = "#14172a"; c.fillRect(x - 3, y - 78, 6, 80);
-          c.beginPath(); c.roundRect(x - 12, y - 122, 24, 50, 7); c.fill();
-          c.fillStyle = verde ? "#5a2b2b" : "#ff4b3e"; c.beginPath(); c.arc(x, y - 109, 8, 0, 7); c.fill();
-          c.fillStyle = verde ? "#3fe07a" : "#23472f"; c.beginPath(); c.arc(x, y - 86, 8, 0, 7); c.fill();
         }
         // Coche
         const cw = 150, ch = cw * 160 / 362;
@@ -787,7 +776,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
     // ---------- 7. Gastroscopia ----------
     function gastro() {
       // Empieza muy rápida y se frena con cada golpe
-      const LARGO = 4400, TRAMO = 1100;
+      const LARGO = 2640;
       const g = raiz.estado = { fase: "bajar", s: 0, x: W / 2, t: 0, golpe: 0, inmune: 0, choques: 0, pinzazos: 0, px: W / 2, py: 0, pinza: "quieta", cogida: null };
       const centro = (s) => W / 2 + Math.min(1, s / 200) * (Math.sin(s / 150) * 66 + Math.sin(s / 64 + 1) * 30);
       const velocidad = () => Math.max(95, 215 * 0.9 ** g.choques);
@@ -821,15 +810,15 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         g.inmune = Math.max(0, g.inmune - dt);
         const r = radio(g.s), d = g.x - centro(g.s);
         if (g.inmune > 0) g.x = centro(g.s) + limitar(d, 12 - r, r - 12);
-        else if (Math.abs(d) > r - 11) { // un toque: vuelta al punto de control y 2,5 s sin poder chocar
+        else if (Math.abs(d) > r - 11) { // un toque: vuelta al principio y 2,5 s sin poder chocar
           g.choques++;
           g.golpe = 0.7;
           g.inmune = 0.7 + 2.5;
           sonidos.mal();
-          g.s = Math.floor(g.s / TRAMO) * TRAMO;
+          g.s = 0;
           g.x = centro(g.s);
           arrastre = null;
-          rotulo("¡Arcada! Vuelves un poco atrás, ahora más despacio");
+          rotulo("¡Arcada! Vuelta a empezar, ahora más despacio");
           dentroDe(2600, () => { if (g.fase === "bajar") rotulo(""); });
         }
         if (g.s >= LARGO) return estomago();
@@ -856,11 +845,88 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         c.restore();
         barra(c, g.s / LARGO, H);
       }
+      // Estómago visto por el endoscopio: mucosa con pliegues, brillos húmedos y jugo gástrico
+      let paredes = null;
+      function pintarParedes(H) {
+        const k = 2, l = document.createElement("canvas");
+        l.width = W * k; l.height = H * k;
+        const x = l.getContext("2d");
+        x.scale(k, k);
+        let sem = 5;
+        const az = () => ((sem = (sem * 16807) % 2147483647) / 2147483647);
+        x.fillStyle = "#5c1d24"; x.fillRect(0, 0, W, H);
+        // Cavidad
+        const cav = x.createRadialGradient(W / 2, H * 0.4, 10, W / 2, H * 0.5, Math.max(W, H) * 0.62);
+        cav.addColorStop(0, "#f4b3a8"); cav.addColorStop(0.45, "#e48d86"); cav.addColorStop(0.8, "#b9555c"); cav.addColorStop(1, "#7d2a33");
+        x.fillStyle = cav; x.beginPath(); x.ellipse(W / 2, H * 0.48, W * 0.6, H * 0.47, 0, 0, 7); x.fill();
+        x.save(); x.beginPath(); x.ellipse(W / 2, H * 0.48, W * 0.6, H * 0.47, 0, 0, 7); x.clip();
+        // Pliegues gástricos: crestas cortas y sinuosas, con sombra debajo y luz encima
+        x.lineCap = "round";
+        for (let i = 0; i < 46; i++) {
+          const largo = 70 + az() * 150, x0 = az() * W - 40, y0 = H * (0.03 + az() * 0.6), ang = (az() - 0.5) * 0.5;
+          const amp = 4 + az() * 9, fase = az() * 6, onda = 22 + az() * 30, grueso = 5 + az() * 7;
+          const traza = (dy) => {
+            x.beginPath();
+            for (let t = 0; t <= largo; t += 6) x.lineTo(x0 + t * Math.cos(ang), y0 + t * Math.sin(ang) + Math.sin(t / onda + fase) * amp + dy);
+          };
+          traza(grueso * 0.45); x.strokeStyle = "rgba(105,22,32,.3)"; x.lineWidth = grueso; x.stroke();
+          traza(0); x.strokeStyle = "rgba(236,150,145,.55)"; x.lineWidth = grueso * 0.8; x.stroke();
+          traza(-grueso * 0.2); x.strokeStyle = "rgba(255,215,205,.45)"; x.lineWidth = grueso * 0.3; x.stroke();
+        }
+        // Vasitos finos y suaves
+        x.strokeStyle = "rgba(150,35,45,.22)"; x.lineWidth = 1;
+        for (let i = 0; i < 9; i++) {
+          let px = az() * W, py = az() * H * 0.55;
+          x.beginPath(); x.moveTo(px, py);
+          for (let j = 0; j < 3; j++) { const cx = px + (az() - 0.5) * 40, cy = py + az() * 20, nx = px + (az() - 0.5) * 50, ny = py + 10 + az() * 25; x.quadraticCurveTo(cx, cy, nx, ny); px = nx; py = ny; }
+          x.stroke();
+        }
+        // Brillos húmedos
+        for (let i = 0; i < 40; i++) {
+          const bx = az() * W, by = az() * H * 0.62;
+          x.fillStyle = `rgba(255,255,255,${0.25 + az() * 0.45})`;
+          x.beginPath(); x.ellipse(bx, by, 1.5 + az() * 4, 1 + az() * 1.6, (az() - 0.5) * 0.8, 0, 7); x.fill();
+        }
+        x.restore();
+        // Luz del endoscopio: centro iluminado y bordes en penumbra
+        const luz = x.createRadialGradient(W / 2, H * 0.42, Math.min(W, H) * 0.2, W / 2, H * 0.5, Math.max(W, H) * 0.75);
+        luz.addColorStop(0, "rgba(0,0,0,0)"); luz.addColorStop(0.7, "rgba(30,5,10,.25)"); luz.addColorStop(1, "rgba(20,0,5,.8)");
+        x.fillStyle = luz; x.fillRect(0, 0, W, H);
+        return { l, H };
+      }
+      // Jugo gástrico: fondo, superficie que ondula y burbujas
+      const burbujas = Array.from({ length: 14 }, () => [Math.random() * W, Math.random(), 1.5 + Math.random() * 3]);
+      function jugo(c, H, encima) {
+        const sup = (xx) => H * 0.585 + Math.sin(xx / 34 + g.t * 1.6) * 3 + Math.sin(xx / 13 - g.t * 2.3) * 1.2;
+        c.save();
+        c.beginPath(); c.ellipse(W / 2, H * 0.48, W * 0.6, H * 0.47, 0, 0, 7); c.clip();
+        c.beginPath(); c.moveTo(-5, H);
+        for (let xx = -5; xx <= W + 5; xx += 6) c.lineTo(xx, sup(xx));
+        c.lineTo(W + 5, H); c.closePath();
+        const gj = c.createLinearGradient(0, H * 0.58, 0, H);
+        if (encima) { gj.addColorStop(0, "rgba(214,196,98,.28)"); gj.addColorStop(1, "rgba(150,140,50,.5)"); }
+        else { gj.addColorStop(0, "#d8c768"); gj.addColorStop(1, "#8f8a3a"); }
+        c.fillStyle = gj; c.fill();
+        if (encima) {
+          c.strokeStyle = "rgba(255,250,210,.7)"; c.lineWidth = 2; c.beginPath();
+          for (let xx = -5; xx <= W + 5; xx += 6) c.lineTo(xx, sup(xx));
+          c.stroke();
+          for (const b of burbujas) {
+            b[1] = (b[1] + 0.0025 + b[2] * 0.0006) % 1;
+            const by = H - b[1] * (H - sup(b[0])), bx = b[0] + Math.sin(g.t * 3 + b[2]) * 2;
+            c.strokeStyle = "rgba(255,250,215,.6)"; c.lineWidth = 1;
+            c.beginPath(); c.arc(bx, by, b[2], 0, 7); c.stroke();
+          }
+        }
+        c.restore();
+      }
       function digerir(dt, c, H) {
         g.x = limitar(g.x, 24, W - 24);
-        c.fillStyle = "#a8434a"; c.fillRect(0, 0, W, H);
-        c.fillStyle = "#f2b1ad"; c.beginPath(); c.ellipse(W / 2, H * 0.48, W * 0.56, H * 0.44, 0, 0, 7); c.fill();
-        c.fillStyle = "#d9c56a"; c.beginPath(); c.ellipse(W / 2, H * 0.72, W * 0.5, H * 0.15, 0, 0, 7); c.fill();
+        if (!paredes || paredes.H !== H) paredes = pintarParedes(H);
+        // Latido suave de la pared (peristaltismo)
+        const lat = 1 + Math.sin(g.t * 1.3) * 0.012;
+        c.save(); c.translate(W / 2, H / 2); c.scale(lat, lat); c.drawImage(paredes.l, -W / 2, -H / 2, W, H); c.restore();
+        jugo(c, H, false);
         const fondo = H * 0.6;
         const objetivo = g.cogida;
         for (const o of cosas) {
@@ -882,6 +948,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
           }
           c.restore();
         }
+        jugo(c, H, true);
         const arriba = 110;
         if (g.pinza === "quieta") { g.px = g.x; g.py = arriba; }
         if (g.pinza === "baja") {
@@ -1274,10 +1341,19 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
         sonidos.activar();
         sonidos.ganar();
         raiz.replaceChildren();
-        const m = datos.mensaje, col = ["#f5c518", "#7a4fc9", "#22a35a", "#f0568c", "#2b8fe0", "#e23b3b"];
-        let papel = "";
-        for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${col[i % 6]};animation-delay:${((i % 9) * 0.16).toFixed(2)}s"></i>`;
-        capa("g-alba", `${papel}<div class="g-sobre">${m.parrafos.map((x) => `<p>${x}</p>`).join("")}<h3>${m.cierre}</h3><p class="firma">${m.firma}</p></div>`);
+        const carta = () => {
+          const m = datos.mensaje, col = ["#f5c518", "#7a4fc9", "#22a35a", "#f0568c", "#2b8fe0", "#e23b3b"];
+          let papel = "";
+          for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${col[i % 6]};animation-delay:${((i % 9) * 0.16).toFixed(2)}s"></i>`;
+          capa("g-alba", `${papel}<div class="g-sobre">${m.parrafos.map((x) => `<p>${x}</p>`).join("")}<h3>${m.cierre}</h3><p class="firma">${m.firma}</p></div>`);
+          sonidos.ganar();
+        };
+        const P = datos.pistas;
+        if (!P) return carta();
+        const q2 = capa("g-alba", `<div class="g-pistas"><h3>${P.titulo}</h3><ol>${P.lista.map((x, i) => `<li style="animation-delay:${0.2 + i * 0.45}s"><span aria-hidden="true">🔍</span>${x}</li>`).join("")}</ol>
+          <p class="g-pregunta" style="animation-delay:${0.4 + P.lista.length * 0.45}s">${P.pregunta}</p></div>
+          <button type="button" class="boton" style="animation-delay:${0.8 + P.lista.length * 0.45}s">Leer tu mensaje</button>`);
+        q2(".boton").addEventListener("click", () => { sonidos.activar(); raiz.replaceChildren(); carta(); });
       });
     }
 
@@ -1308,6 +1384,7 @@ acelera: (v) => nota("sawtooth", 55 + v * 0.16, 62 + v * 0.18, 0, 0.2, 0.045),
       if (!escena) return;
       sonidos.activar();
       if (escena.n < ESCENAS.length - 1) return ir(escena.n + 1);
+      if (raiz.querySelector(".g-pistas")) return raiz.querySelector(".g-alba .boton")?.click();
       if (!raiz.querySelector(".g-sobre")) raiz.querySelector(".g-aviso-sms")?.click();
     };
     return terminar;

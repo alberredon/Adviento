@@ -58,7 +58,8 @@
   function refrescar() {
     for (const { d, b } of cajas) {
       const e = estado(d.dia);
-      const visto = abiertos.has(d.dia);
+      // Solo cuenta como vista si ya ha llegado su día (evita restos de pruebas)
+      const visto = abiertos.has(d.dia) && ["hoy", "abierto", "pasado"].includes(e);
       b.classList.toggle("hoy", e === "hoy" && !visto);
       const icono = b.querySelector(".estado");
       const tipo = visto ? "hecho" : (e === "futuro" || e === "pasado") ? "candado" : "";

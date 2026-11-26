@@ -396,6 +396,22 @@ dialog.ref-completo #ventana-contenido { gap: 0; }
 @keyframes rul-entra { from { opacity: 0; transform: translateY(30px) scale(.85); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { .rul-mensaje, .rul-ticket.nuevo { animation: none; } .rul-vale { animation-duration: .01s; } }
 
+/* ---------- Pistas del regalo final ---------- */
+.pista-tarjeta { width: min(320px, 90%); padding: 22px 20px 24px; border-radius: 18px; background: var(--crema); color: #8f3233; display: flex; flex-direction: column; align-items: center; gap: 8px; box-shadow: 0 10px 26px rgb(0 0 0 / .25); animation: rul-entra .6s cubic-bezier(.16,1,.3,1) both; }
+.pista-tarjeta span { font-size: 40px; line-height: 1; }
+.pista-tarjeta small { font: 700 14px "Nunito", sans-serif; letter-spacing: .08em; text-transform: uppercase; color: var(--tinta); opacity: .7; }
+.pista-tarjeta strong { font: 400 25px/1.25 "Abril Fatface", Georgia, serif; text-wrap: balance; }
+.refugio .ref-ver-pista { position: absolute; left: 50%; bottom: max(24px, env(safe-area-inset-bottom)); transform: translateX(-50%); margin: 0; white-space: nowrap; opacity: 0; animation: pista-aparece .5s 2.6s ease-out forwards; }
+@keyframes pista-aparece { to { opacity: 1; } }
+.g-pistas { width: min(330px, 100%); padding: 20px 18px; border-radius: 18px; background: var(--crema); color: var(--tinta); }
+.g-pistas h3 { margin: 0 0 10px; color: var(--rojo); }
+.g-pistas ol { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; text-align: left; }
+.g-pistas li { display: flex; gap: 10px; align-items: flex-start; font-size: 17px; font-weight: 700; line-height: 1.3; opacity: 0; animation: pista-aparece .5s ease-out forwards; }
+.g-pistas li span { flex: none; }
+.g-pistas .g-pregunta { margin: 16px 0 0; font: 400 26px/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; opacity: 0; animation: pista-aparece .6s ease-out forwards; }
+.guardia .g-alba > .boton { opacity: 0; animation: pista-aparece .5s ease-out forwards; }
+@media (prefers-reduced-motion: reduce) { .pista-tarjeta { animation: none; } .g-pistas li, .g-pistas .g-pregunta, .guardia .g-alba > .boton, .refugio .ref-ver-pista { animation-duration: .01s; animation-delay: 0s !important; } }
+
 /* ---------- Día 6: la guardia ---------- */
 .guardia { background: #1b2244; }
 .guardia .esc-capa { color: var(--tinta); }

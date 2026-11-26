@@ -379,7 +379,6 @@ const abrirEscalada = (() => {
       const fin = () => {
         if (!b.hidden || cerrado) return;
         b.hidden = false;
-        b.focus({ preventScroll: true });
       };
       b.addEventListener("click", () => { sonidos.activar(); accion(); });
       v.addEventListener("ended", fin);

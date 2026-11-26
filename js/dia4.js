@@ -1376,13 +1376,24 @@ const abrirRefugio = (() => {
     }
     function final() {
       sala?.pausar(true);
-      prepararRegalo().catch(() => {});
+      if (datos.regalo) prepararRegalo().catch(() => {});
       const n = e.pistas.length;
       const b = capa("ref-final", `<h3>¡Rescatada!</h3><p>${n ? `Has salido del refugio usando ${n} ${n === 1 ? "pista" : "pistas"}.` : "Has salido del refugio sin pedir ninguna pista. ¡Toda una experta!"}</p><button type="button" class="boton">Abrir el regalo</button>`);
       sonidos.ganar();
       b(".boton").addEventListener("click", regalo);
     }
     async function regalo() {
+      // Sin foto: la sorpresa es la pista, en un vale que sale de la caja
+      if (!datos.regalo) {
+        let papel = "";
+        const tonos = ["#f2b7bc", "#d6c5b5", "#b9bd94", "#fbf0e1", "#e6a79b", "#b4bfab", "#e3cf9f"];
+        for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${tonos[i % 7]};animation-delay:${(1.4 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
+        const p = datos.pista || { titulo: "", texto: "" };
+        capa("esc-regalo ref-regalo", `<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>
+          ${papel}<div class="vale"><strong>${p.titulo}</strong><span>${p.texto}</span></div>`);
+        sonidos.ganar();
+        return;
+      }
       const boton = raiz.querySelector(".ref-final .boton");
       if (boton) { boton.disabled = true; boton.textContent = "Abriendo…"; }
       let foto = null;
@@ -1392,7 +1403,9 @@ const abrirRefugio = (() => {
       const tonos = ["#f2b7bc", "#d6c5b5", "#b9bd94", "#fbf0e1", "#e6a79b", "#b4bfab", "#e3cf9f"];
       for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${tonos[i % 7]};animation-delay:${(1.4 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
       const b = capa("esc-regalo ref-regalo", `<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>
-        ${papel}<figure class="ref-foto"><img alt="Tu regalo"><figcaption><strong>${datos.regalo.titulo}</strong><span>${datos.regalo.mensaje}</span></figcaption></figure>`);
+        ${papel}<figure class="ref-foto"><img alt="Tu regalo"><figcaption><strong>${datos.regalo.titulo}</strong><span>${datos.regalo.mensaje}</span></figcaption></figure>
+        ${datos.pista ? '<button type="button" class="boton ref-ver-pista">Ver tu pista</button>' : ""}`);
+      b(".ref-ver-pista")?.addEventListener("click", verPista);
       sonidos.ganar();
       const img = b("img");
       if (foto) {
@@ -1403,6 +1416,13 @@ const abrirRefugio = (() => {
         img.remove();
         b("figcaption span").textContent += " (No se ha podido cargar la foto: comprueba la conexión y vuelve a abrir la caja.)";
       }
+    }
+
+    function verPista() {
+      const p = datos.pista;
+      const b = capa("ref-final", `<div class="pista-tarjeta"><span aria-hidden="true">🔍</span><small>${p.titulo}</small><strong>${p.texto}</strong></div><button type="button" class="secundario">Volver a la foto</button>`);
+      sonidos.ganar();
+      b(".secundario").addEventListener("click", regalo);
     }
 
     // ---------- Portada ----------
