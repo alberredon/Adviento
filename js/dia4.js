@@ -834,6 +834,16 @@ const abrirRefugio = (() => {
       puertaTaq.rotation.y = e.hechos.taquilla ? -1.9 : 0;
       candado.visible = !e.hechos.taquilla;
       dentroTaq.visible = !e.hechos.taquilla;
+      if (final && !e.hechos.fin) {
+        final = 0;
+        fondoMat.map = cielos[0];
+        fondoMat.needsUpdate = true;
+        escena.background.set("#1d1b2e");
+        muroNieve.visible = true;
+        copos.visible = true;
+        sol.intensity = 0;
+        luna.intensity = 0.35;
+      }
       bisagra.rotation.y = e.hechos.cavado ? -1.75 : 0;
       montonNieve.scale.set(e.hechos.cavado ? 1.7 : 1.3, e.hechos.cavado ? 0.55 : 0.35, e.hechos.cavado ? 1.2 : 0.7);
       mochila.visible = !!e.hechos.mochila;
@@ -932,7 +942,8 @@ const abrirRefugio = (() => {
     }
 
     // ---------- Bucle ----------
-    function pedir() { if (!pedido && !cerrado) pedido = requestAnimationFrame(cuadro); }
+    let pausado = false;
+    function pedir() { if (!pedido && !cerrado && !pausado) pedido = requestAnimationFrame(cuadro); }
     function cuadro() {
       pedido = 0;
       if (cerrado) return;
@@ -974,6 +985,7 @@ const abrirRefugio = (() => {
     return {
       medir, aplicar, temperatura, amanecer, mirarA, soltar,
       bloquear(b) { bloqueado = b; },
+      pausar(p) { pausado = p; if (p) { cancelAnimationFrame(pedido); pedido = 0; } else { reloj.getDelta(); pedir(); } },
       objeto: (id) => tocables.find((g) => g.userData.id === id),
       cerrar() {
         cerrado = true;
@@ -991,7 +1003,7 @@ const abrirRefugio = (() => {
   function montar(contenedor, datos) {
     const C = datos.codigos;
     const sonidos = crearSonidos();
-    let cerrado = false, sala = null, fotoUrl = null, morseCorriendo = 0, panelAbierto = "";
+    let cerrado = false, sala = null, fotoUrl = null, morseCorriendo = 0, panelAbierto = "", dormida = null, fotoRegalo = null;
     const nuevo = () => ({ inv: [], hechos: {}, pistas: [], temp: 4, empezado: false });
     let e = nuevo();
     try {
@@ -1183,7 +1195,7 @@ const abrirRefugio = (() => {
       },
       arva: () => { setTimeout(montarArva); return `<h3>ARVA</h3><p class="ref-nota">Mueve el dedo por la nieve: cuanto más cerca, más rápido pita.</p><div class="ref-arva"><canvas></canvas><span class="ref-aparato" hidden>${ICONOS.arva}</span><b class="ref-dist">-- m</b></div><button type="button" class="boton ref-cavar">Cavar aquí</button>`; },
       mochila: () => {
-        if (e.hechos.mochilaAbierta) return `<h3>Mochila de Alber</h3><p>Ropa mojada y una barrita aplastada.</p>`;
+        if (e.hechos.mochilaAbierta) return `<h3>Mochila de Alber</h3><p>${datos.mochilaDentro}</p>`;
         return `<h3>Mochila</h3><p class="ref-mano">${datos.etiquetaMochila}</p>${candado(C.mochila, false, () => { sonidos.abrir(); hecho("mochilaAbierta"); coger("pilas", "tabla"); refrescar(); })}`;
       },
       radio: () => {
@@ -1195,7 +1207,15 @@ const abrirRefugio = (() => {
       },
       tabla: () => `<h3>Tabla morse</h3><p class="ref-nota">Corto = punto · Largo = raya</p><div class="ref-tabla">${Object.entries(MORSE).map(([l, m]) => `<span><b>${l}</b>${m.replace(/\./g, "•").replace(/-/g, "—")}</span>`).join("")}</div>`,
       termometro: () => `<h3>Termómetro</h3><p>${e.temp < 0 ? "Bajo cero. Hay que encender la estufa cuanto antes." : e.hechos.fuego ? "Va subiendo. ¡Bien!" : "Hace frío y cada vez más."}</p>`,
-      literas: () => `<h3>Literas</h3><p>Las mantas están heladas. Ni se te ocurra echarte una siesta ahora.</p>`,
+      literas: () => {
+        setTimeout(() => {
+          const img = panel.querySelector(".ref-dormida");
+          if (!img) return;
+          dormida ||= Cifrado.imagen(CARPETA + "durmiendo");
+          dormida.then((u) => { if (!cerrado && img.isConnected) { img.src = u; img.hidden = false; } }).catch(() => { dormida = null; });
+        });
+        return `<h3>Literas</h3><p>Parece que alguien está durmiendo…</p><img class="ref-dormida" alt="Alguien durmiendo en la litera" hidden>`;
+      },
       farol: () => `<h3>Farol</h3><p>Le queda poco aceite, pero da algo de luz.</p>`,
     };
 
@@ -1341,13 +1361,33 @@ const abrirRefugio = (() => {
       raiz.append(d);
       return (s) => d.querySelector(s);
     }
+    // Foto del regalo lista (descifrada y decodificada) antes de enseñarla
+    function prepararRegalo() {
+      fotoRegalo ||= Cifrado.imagen(CARPETA + "regalo").then(async (u) => {
+        if (cerrado) { URL.revokeObjectURL(u); throw new Error("cerrado"); }
+        fotoUrl = u;
+        const i = new Image();
+        i.src = u;
+        try { await i.decode(); } catch {}
+        return i;
+      });
+      fotoRegalo.catch(() => { fotoRegalo = null; });
+      return fotoRegalo;
+    }
     function final() {
+      sala?.pausar(true);
+      prepararRegalo().catch(() => {});
       const n = e.pistas.length;
       const b = capa("ref-final", `<h3>¡Rescatada!</h3><p>${n ? `Has salido del refugio usando ${n} ${n === 1 ? "pista" : "pistas"}.` : "Has salido del refugio sin pedir ninguna pista. ¡Toda una experta!"}</p><button type="button" class="boton">Abrir el regalo</button>`);
       sonidos.ganar();
       b(".boton").addEventListener("click", regalo);
     }
-    function regalo() {
+    async function regalo() {
+      const boton = raiz.querySelector(".ref-final .boton");
+      if (boton) { boton.disabled = true; boton.textContent = "Abriendo…"; }
+      let foto = null;
+      try { foto = await prepararRegalo(); } catch {}
+      if (cerrado) return;
       let papel = "";
       const tonos = ["#f2b7bc", "#d6c5b5", "#b9bd94", "#fbf0e1", "#e6a79b", "#b4bfab", "#e3cf9f"];
       for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${tonos[i % 7]};animation-delay:${(1.4 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
@@ -1355,13 +1395,14 @@ const abrirRefugio = (() => {
         ${papel}<figure class="ref-foto"><img alt="Tu regalo"><figcaption><strong>${datos.regalo.titulo}</strong><span>${datos.regalo.mensaje}</span></figcaption></figure>`);
       sonidos.ganar();
       const img = b("img");
-      img.style.visibility = "hidden";
-      Cifrado.imagen(CARPETA + "regalo").then((u) => {
-        if (cerrado) return URL.revokeObjectURL(u);
-        fotoUrl = u;
-        img.src = u;
-        img.style.visibility = "";
-      }).catch(() => { b("figcaption span").textContent += " (No se ha podido cargar la foto: comprueba la conexión y vuelve a abrir la caja.)"; });
+      if (foto) {
+        img.width = foto.naturalWidth;
+        img.height = foto.naturalHeight;
+        img.src = foto.src;
+      } else {
+        img.remove();
+        b("figcaption span").textContent += " (No se ha podido cargar la foto: comprueba la conexión y vuelve a abrir la caja.)";
+      }
     }
 
     // ---------- Portada ----------
@@ -1385,6 +1426,7 @@ const abrirRefugio = (() => {
       pintarInventario();
       pintarArriba();
       if (e.hechos.fin) return final();
+      sala?.pausar(false);
       sonidos.viento(e.hechos.fuego ? 0.4 : 1);
       sonidos.fuego(!!e.hechos.fuego);
       clearInterval(frio);
@@ -1454,6 +1496,7 @@ const abrirRefugio = (() => {
       sala?.cerrar();
       sonidos.cerrar();
       if (fotoUrl) URL.revokeObjectURL(fotoUrl);
+      dormida?.then((u) => URL.revokeObjectURL(u)).catch(() => {});
     };
     if (location.hostname === "localhost") window.refugioPruebas = { abrirPanel, estado: () => e };
     // Pruebas: resuelve el paso actual
