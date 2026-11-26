@@ -141,7 +141,7 @@ const abrirRefugio = (() => {
   }
 
   // ---------- La sala en 3D ----------
-  function crearSala(lienzo, alTocar) {
+  function crearSala(lienzo, alTocar, cimas = []) {
     const T = window.THREE;
     const renderer = new T.WebGLRenderer({ canvas: lienzo, antialias: true });
     renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
@@ -171,7 +171,7 @@ const abrirRefugio = (() => {
       t.needsUpdate = true;
       t.wrapS = t.wrapT = T.RepeatWrapping;
       t.repeat.set(...rep);
-      const m = new T.MeshStandardMaterial({ map: t, roughness: 0.9, metalness: 0, ...extra });
+      const m = new T.MeshStandardMaterial({ map: t, bumpMap: t, bumpScale: 0.012, roughness: 0.9, metalness: 0, ...extra });
       mats.set(Symbol(), m);
       return m;
     };
@@ -216,28 +216,69 @@ const abrirRefugio = (() => {
         if (!vertical) { c.translate(w, 0); c.rotate(Math.PI / 2); }
         const a = w / n;
         for (let i = 0; i < n; i++) {
-          c.fillStyle = mezcla(base, 0.86 + azar() * 0.26);
-          c.fillRect(i * a, 0, a, h);
-          // Vetas
-          for (let k = 0; k < 16; k++) {
-            const x0 = i * a + azar() * a, amp = 2 + azar() * 5, fase = azar() * 9;
-            c.strokeStyle = `rgba(${azar() < 0.5 ? "60,35,20" : "255,230,200"},${0.06 + azar() * 0.1})`;
-            c.lineWidth = 0.6 + azar() * 1.6;
+          const x0 = i * a, tono = 0.9 + azar() * 0.18;
+          const g = c.createLinearGradient(x0, 0, x0 + a, 0);
+          g.addColorStop(0, mezcla(base, tono * 0.86));
+          g.addColorStop(0.18, mezcla(base, tono));
+          g.addColorStop(0.82, mezcla(base, tono * 1.02));
+          g.addColorStop(1, mezcla(base, tono * 0.84));
+          c.fillStyle = g;
+          c.fillRect(x0, 0, a, h);
+          // Vetas finas que ondulan juntas
+          const fase = azar() * 9, onda = 3 + azar() * 6;
+          for (let k = 0; k < 46; k++) {
+            const xv = x0 + 3 + azar() * (a - 6), amp = onda * (0.6 + azar() * 0.6);
+            const oscura = azar() < 0.7;
+            c.strokeStyle = oscura ? `rgba(55,30,15,${0.05 + azar() * 0.1})` : `rgba(255,228,190,${0.04 + azar() * 0.07})`;
+            c.lineWidth = 0.5 + azar() * (oscura ? 1.8 : 1);
             c.beginPath();
-            for (let y = 0; y <= h; y += 16) c.lineTo(limitar(x0 + Math.sin(y / 60 + fase) * amp, i * a + 1, (i + 1) * a - 1), y);
+            for (let y = -8; y <= h + 8; y += 8) c.lineTo(limitar(xv + Math.sin(y / 70 + fase) * amp + Math.sin(y / 23 + k) * 0.8, x0 + 1, x0 + a - 1), y);
             c.stroke();
           }
-          // Algún nudo
-          if (azar() < 0.25) {
-            const x = i * a + a * (0.3 + azar() * 0.4), y = azar() * h;
-            for (let k = 4; k > 0; k--) { c.fillStyle = `rgba(70,40,22,${0.12 + 0.1 * (4 - k)})`; c.beginPath(); c.ellipse(x, y, k * 2.2, k * 4.5, 0, 0, 7); c.fill(); }
+          // Nudo con vetas que lo rodean
+          if (azar() < 0.3) {
+            const x = x0 + a * (0.3 + azar() * 0.4), y = azar() * h;
+            for (let k = 7; k > 0; k--) {
+              c.strokeStyle = `rgba(60,32,15,${0.1 + 0.05 * (7 - k)})`;
+              c.lineWidth = 1.2;
+              c.beginPath(); c.ellipse(x, y, k * 2, k * 5.5, 0, 0, 7); c.stroke();
+            }
+            c.fillStyle = "rgba(50,25,12,.7)"; c.beginPath(); c.ellipse(x, y, 2.5, 5, 0, 0, 7); c.fill();
           }
-          // Juntas
+          // Poro
+          for (let k = 0; k < 220; k++) { c.fillStyle = `rgba(40,20,8,${azar() * 0.12})`; c.fillRect(x0 + azar() * a, azar() * h, 1, 2 + azar() * 4); }
+          // Junta entre tablas y clavos
           c.fillStyle = linea;
-          c.fillRect(i * a, 0, 2.5, h);
-          c.fillStyle = "rgba(255,255,255,.08)";
-          c.fillRect(i * a + 2.5, 0, 1.5, h);
+          c.fillRect(x0, 0, 2.5, h);
+          c.fillStyle = "rgba(255,255,255,.07)";
+          c.fillRect(x0 + 2.5, 0, 1.5, h);
+          for (const y of [h * 0.12, h * 0.88]) { c.fillStyle = "rgba(30,25,22,.75)"; c.beginPath(); c.arc(x0 + a / 2, y, 2.2, 0, 7); c.fill(); }
         }
+      });
+    }
+    function corteza() {
+      return textura(256, 256, (c, w, h) => {
+        c.fillStyle = "#4a3324"; c.fillRect(0, 0, w, h);
+        for (let k = 0; k < 90; k++) {
+          const x = azar() * w, alto = 20 + azar() * 70;
+          c.fillStyle = mezcla(["#5c4130", "#3a281c", "#6e5241", "#2c1f16"][Math.floor(azar() * 4)], 1);
+          c.fillRect(x, azar() * h, 3 + azar() * 7, alto);
+        }
+        for (let k = 0; k < 400; k++) { c.fillStyle = `rgba(${azar() < 0.5 ? "0,0,0" : "180,160,130"},${azar() * 0.2})`; c.fillRect(azar() * w, azar() * h, 2, 2); }
+      });
+    }
+    function anillos() {
+      return textura(128, 128, (c, w, h) => {
+        c.fillStyle = "#c79a68"; c.fillRect(0, 0, w, h);
+        for (let k = 14; k > 0; k--) { c.strokeStyle = `rgba(110,65,30,${0.25 + azar() * 0.25})`; c.lineWidth = 1 + azar() * 1.5; c.beginPath(); c.arc(64 + azar() * 3, 64 + azar() * 3, k * 4.3, 0, 7); c.stroke(); }
+        c.strokeStyle = "#4a3324"; c.lineWidth = 8; c.beginPath(); c.arc(64, 64, 62, 0, 7); c.stroke();
+      });
+    }
+    function lona(color) {
+      return textura(256, 256, (c, w, h) => {
+        c.fillStyle = color; c.fillRect(0, 0, w, h);
+        for (let y = 0; y < h; y += 2) for (let x = (y / 2) % 2 * 2; x < w; x += 4) { c.fillStyle = `rgba(255,255,255,${0.025 + azar() * 0.03})`; c.fillRect(x, y, 2, 1); }
+        for (let k = 0; k < 300; k++) { c.fillStyle = `rgba(0,0,0,${azar() * 0.25})`; c.fillRect(azar() * w, azar() * h, 2, 1); }
       });
     }
     function piedra() {
@@ -322,7 +363,7 @@ const abrirRefugio = (() => {
     pared(2 * R, ALTO, G, 0, ALTO / 2, R);
     pared(G, ALTO, 2 * R, -R, ALTO / 2, 0);
     // Rodapié de piedra
-    for (const [w, d, x, z] of [[2 * R, 0.16, 0, R - 0.08], [0.16, 2 * R, -R + 0.08, 0], [2.95, 0.16, -2.025, -R + 0.08], [2.95, 0.16, 2.025, -R + 0.08], [0.16, 2.3, R - 0.08, -2.35], [0.16, 3.3, R - 0.08, 1.85]]) caja(w, 0.7, d, conTextura(texPiedra, [Math.max(w, d) / 2.2, 0.7]), x, 0.35, z);
+    for (const [w, d, x, z] of [[2 * R, 0.16, 0, R - 0.08], [0.16, 2 * R, -R + 0.08, 0], [2.95, 0.16, -2.025, -R + 0.08], [2.95, 0.16, 2.025, -R + 0.08], [0.16, 2.3, R - 0.08, -2.35], [0.16, 3.3, R - 0.08, 1.85], [0.16, 1.4, R - 0.08, -0.5]]) caja(w, 0.7, d, conTextura(texPiedra, [Math.max(w, d) / 2.2, 0.7]), x, 0.35, z);
 
     // Exterior: cielo y montañas, por la ventana y por la puerta
     function pintarCielo(c, w, h, amanecer) {
@@ -398,15 +439,36 @@ const abrirRefugio = (() => {
     puerta.add(montonNieve);
     hoja.userData.hoja = true;
 
-    // Cesta de leña
-    const cesta = grupo("cesta", -1.45, 0, -3.05);
-    cilindro(0.32, 0.27, 0.38, mueble, 0, 0.19, 0, cesta, 12);
-    cilindro(0.3, 0.3, 0.02, "#5e3b25", 0, 0.36, 0, cesta, 12);
+    // Cubo de madera con troncos
+    const cesta = grupo("cesta", -1.45, 0, -3.0);
+    const duelas = conTextura(tablas("#9b6a40", "#3a2414", 14, true), [2, 0.6], { side: T.DoubleSide });
+    const cuerpoCubo = new T.Mesh(new T.CylinderGeometry(0.3, 0.25, 0.44, 28, 1, true), duelas);
+    cuerpoCubo.position.y = 0.22;
+    cesta.add(cuerpoCubo);
+    cilindro(0.25, 0.25, 0.02, mueble, 0, 0.03, 0, cesta, 28);
+    const metalCubo = mat("#3a3a40", { roughness: 0.45, metalness: 0.6 });
+    for (const [y, rr] of [[0.07, 0.258], [0.37, 0.292]]) {
+      const aro = new T.Mesh(new T.TorusGeometry(rr, 0.012, 6, 36), metalCubo);
+      aro.rotation.x = Math.PI / 2;
+      aro.position.y = y;
+      cesta.add(aro);
+    }
+    const borde = new T.Mesh(new T.TorusGeometry(0.297, 0.014, 6, 36), mueble);
+    borde.rotation.x = Math.PI / 2;
+    borde.position.y = 0.44;
+    cesta.add(borde);
+    const asa = new T.Mesh(new T.TorusGeometry(0.29, 0.008, 6, 30, Math.PI), metalCubo);
+    asa.position.y = 0.44;
+    asa.rotation.y = 0.5;
+    cesta.add(asa);
     const troncos = new T.Group();
     cesta.add(troncos);
-    for (const [x, y, rz, ry] of [[-0.1, 0.44, 1.57, 0.2], [0.1, 0.44, 1.57, -0.3], [0, 0.56, 1.57, 0.6]]) {
-      const t = cilindro(0.075, 0.075, 0.6, conTextura(texMueble, [0.4, 1]), x, y, 0, troncos, 9);
-      t.rotation.set(0, ry, rz);
+    const matTronco = [conTextura(corteza(), [1, 1.5], { roughness: 1 }), conTextura(anillos(), [1, 1]), conTextura(anillos(), [1, 1])];
+    for (const [x, z, r0, alto, inc, gir] of [[-0.1, -0.06, 0.055, 0.62, 0.16, 0.3], [0.09, -0.08, 0.06, 0.56, -0.12, 1.1], [0.02, 0.1, 0.05, 0.66, 0.08, 2.2], [-0.12, 0.09, 0.045, 0.5, 0.2, 3.9], [0.13, 0.08, 0.05, 0.58, -0.18, 5.1]]) {
+      const t = new T.Mesh(new T.CylinderGeometry(r0, r0 * 1.05, alto, 10), matTronco);
+      t.position.set(x, 0.04 + alto / 2, z);
+      t.rotation.set(inc * Math.cos(gir), gir, inc * Math.sin(gir));
+      troncos.add(t);
     }
 
     // Radio en su balda
@@ -433,17 +495,73 @@ const abrirRefugio = (() => {
     cristal.rotation.y = -Math.PI / 2;
     estufa.add(cristal);
     const llamas = new T.Group();
-    llamas.position.set(-0.372, 0.42, 0);
     llamas.visible = false;
     estufa.add(llamas);
-    const vidrioEstufa = new T.Mesh(new T.PlaneGeometry(0.32, 0.28), new T.MeshBasicMaterial({ color: "#ffb070", transparent: true, opacity: 0.18, depthWrite: false }));
+    const lienzoFuego = document.createElement("canvas");
+    lienzoFuego.width = 128; lienzoFuego.height = 112;
+    const cf = lienzoFuego.getContext("2d");
+    const texFuego = new T.CanvasTexture(lienzoFuego);
+    const matFuego = new T.MeshBasicMaterial({ map: texFuego, transparent: true, blending: T.AdditiveBlending, depthWrite: false });
+    const planoFuego = new T.Mesh(new T.PlaneGeometry(0.32, 0.28), matFuego);
+    planoFuego.position.set(-0.37, 0.55, 0);
+    planoFuego.rotation.y = -Math.PI / 2;
+    llamas.add(planoFuego);
+    const vidrioEstufa = new T.Mesh(new T.PlaneGeometry(0.32, 0.28), new T.MeshBasicMaterial({ color: "#ffb070", transparent: true, opacity: 0.08, depthWrite: false }));
     vidrioEstufa.position.set(-0.385, 0.55, 0);
     vidrioEstufa.rotation.y = -Math.PI / 2;
     estufa.add(vidrioEstufa);
-    for (const [z, h, c] of [[-0.07, 0.17, "#ff7b2e"], [0.06, 0.14, "#ffb13b"], [0, 0.2, "#ffd36b"]]) {
-      const f = new T.Mesh(new T.ConeGeometry(0.05, h, 8), new T.MeshBasicMaterial({ color: c }));
-      f.position.set(0, h / 2, z);
-      llamas.add(f);
+    // Marco de la puertecilla
+    for (const [h, d, y, z] of [[0.025, 0.36, 0.69, 0], [0.025, 0.36, 0.41, 0], [0.3, 0.025, 0.55, 0.17], [0.3, 0.025, 0.55, -0.17]]) caja(0.02, h, d, "#151418", -0.375, y, z, estufa);
+    // Resplandor en el suelo
+    const resplandor = new T.Mesh(new T.PlaneGeometry(2.2, 2.2), new T.MeshBasicMaterial({
+      map: textura(128, 128, (c, w, h) => { const g = c.createRadialGradient(64, 64, 0, 64, 64, 64); g.addColorStop(0, "rgba(255,140,50,.55)"); g.addColorStop(1, "rgba(255,120,40,0)"); c.fillStyle = g; c.fillRect(0, 0, w, h); }),
+      transparent: true, blending: T.AdditiveBlending, depthWrite: false,
+    }));
+    resplandor.rotation.x = -Math.PI / 2;
+    resplandor.position.set(-0.8, 0.012, 0);
+    llamas.add(resplandor);
+    const chispas = Array.from({ length: 14 }, () => [azar() * 128, 112 * azar(), 0.5 + azar()]);
+    function pintarFuego(t) {
+      cf.globalCompositeOperation = "source-over";
+      cf.fillStyle = "#000";
+      cf.fillRect(0, 0, 128, 112);
+      cf.globalCompositeOperation = "lighter";
+      // Brasas
+      for (let i = 0; i < 6; i++) {
+        const x = 14 + i * 20 + Math.sin(i * 3.1) * 4, b = 0.55 + 0.45 * Math.sin(t * (1.5 + i * 0.37) + i);
+        const g = cf.createRadialGradient(x, 100, 0, x, 100, 22);
+        g.addColorStop(0, `rgba(255,${120 + b * 60},40,${0.5 + b * 0.4})`);
+        g.addColorStop(1, "rgba(120,20,0,0)");
+        cf.fillStyle = g;
+        cf.fillRect(x - 22, 78, 44, 34);
+      }
+      // Lenguas de fuego
+      for (let k = 0; k < 9; k++) {
+        const x = 16 + k * 12 + Math.sin(t * 2.1 + k * 1.3) * 5;
+        const ruido = 0.55 + 0.25 * Math.sin(t * (6.3 + k % 4) + k * 2.7) + 0.2 * Math.sin(t * (11.7 + k) + k);
+        const alto = (34 + 46 * Math.sin((k + 0.5) / 9 * Math.PI)) * ruido, ancho = 9 + (k % 3) * 3;
+        const vaiven = Math.sin(t * 4.7 + k * 1.9) * 7, base = 104;
+        const g = cf.createLinearGradient(0, base, 0, base - alto);
+        g.addColorStop(0, "rgba(255,245,200,.95)");
+        g.addColorStop(0.25, "rgba(255,190,60,.85)");
+        g.addColorStop(0.6, "rgba(240,90,20,.55)");
+        g.addColorStop(1, "rgba(150,20,0,0)");
+        cf.fillStyle = g;
+        cf.beginPath();
+        cf.moveTo(x - ancho, base);
+        cf.quadraticCurveTo(x - ancho * 0.9 + vaiven * 0.3, base - alto * 0.55, x + vaiven, base - alto);
+        cf.quadraticCurveTo(x + ancho * 0.9 + vaiven * 0.3, base - alto * 0.55, x + ancho, base);
+        cf.fill();
+      }
+      // Chispas
+      for (const p of chispas) {
+        p[1] -= p[2] * 1.4;
+        p[0] += Math.sin(t * 5 + p[2] * 9) * 0.6;
+        if (p[1] < 0) { p[1] = 100; p[0] = 20 + azar() * 88; }
+        cf.fillStyle = `rgba(255,${180 + p[2] * 50},90,${p[1] / 110})`;
+        cf.fillRect(p[0], p[1], 1.6, 1.6);
+      }
+      texFuego.needsUpdate = true;
     }
 
     // Termómetro
@@ -461,30 +579,72 @@ const abrirRefugio = (() => {
       caja(1.4, 0.06, 0.88, conTextura(lana(manta), [1, 1]), 0.25, y + 0.14, 0, literas);
       caja(0.35, 0.1, 0.6, "#ffffff", -0.75, y + 0.16, 0, literas);
     }
-    const taquilla = grupo("taquilla", 1.85, 0, R - 0.35);
-    caja(0.75, 1.9, 0.55, mat("#8fa094", { roughness: 0.5, metalness: 0.3 }), 0, 0.95, 0, taquilla);
-    caja(0.7, 1.84, 0.02, "#26233f", 0, 0.95, -0.27, taquilla);
+    const taquilla = grupo("taquilla", 1.85, 0, R - 0.45);
+    const chapa = mat("#8fa094", { roughness: 0.5, metalness: 0.3 }), chapaDentro = mat("#56635a", { roughness: 0.7, metalness: 0.2 });
+    caja(0.75, 1.9, 0.02, chapa, 0, 0.95, 0.265, taquilla);
+    for (const x of [-0.365, 0.365]) caja(0.02, 1.9, 0.55, chapa, x, 0.95, 0, taquilla);
+    caja(0.75, 0.02, 0.55, chapa, 0, 1.89, 0, taquilla);
+    caja(0.75, 0.06, 0.55, chapa, 0, 0.03, 0, taquilla);
+    caja(0.71, 1.82, 0.01, chapaDentro, 0, 0.95, 0.25, taquilla);
+    caja(0.71, 0.02, 0.5, chapaDentro, 0, 1.55, 0.01, taquilla);
+    caja(0.04, 0.04, 0.04, "#c9c9c9", 0, 1.48, 0.2, taquilla); // percha
     const puertaTaq = new T.Group();
-    puertaTaq.position.set(0.37, 0, -0.28);
+    puertaTaq.position.set(0.375, 0, -0.275);
     taquilla.add(puertaTaq);
-    caja(0.74, 1.86, 0.03, mat("#b4bfab", { roughness: 0.5, metalness: 0.3 }), -0.37, 0.95, 0, puertaTaq);
-    for (let i = 0; i < 4; i++) caja(0.4, 0.02, 0.01, "#6f7f73", -0.37, 1.65 - i * 0.05, -0.02, puertaTaq);
-    const candado = caja(0.08, 0.1, 0.04, "#e3cf9f", -0.68, 1.0, -0.04, puertaTaq);
+    caja(0.75, 1.88, 0.025, mat("#b4bfab", { roughness: 0.45, metalness: 0.3 }), -0.375, 0.95, -0.0125, puertaTaq);
+    for (let i = 0; i < 5; i++) caja(0.4, 0.018, 0.01, "#6f7f73", -0.375, 1.68 - i * 0.05, -0.03, puertaTaq);
+    for (let i = 0; i < 5; i++) caja(0.4, 0.018, 0.01, "#6f7f73", -0.375, 0.42 - i * 0.05, -0.03, puertaTaq);
+    caja(0.03, 0.14, 0.03, "#c9c9c9", -0.7, 1.0, -0.035, puertaTaq);
+    const candado = caja(0.07, 0.09, 0.035, mat("#d4b14a", { roughness: 0.3, metalness: 0.7 }), -0.7, 0.9, -0.05, puertaTaq);
     const dentroTaq = new T.Group();
     taquilla.add(dentroTaq);
-    const palaMesh = caja(0.06, 1.1, 0.06, "#8a5a3b", -0.15, 0.75, 0, dentroTaq);
-    caja(0.26, 0.3, 0.04, "#b14645", -0.15, 0.25, 0, dentroTaq);
-    caja(0.12, 0.18, 0.06, "#e3a23c", 0.15, 1.3, 0, dentroTaq);
-    palaMesh.rotation.z = 0.08;
+    const palaMesh = caja(0.035, 1.0, 0.035, mueble, -0.15, 0.6, 0.05, dentroTaq);
+    caja(0.24, 0.3, 0.03, mat("#b14645", { roughness: 0.4 }), -0.15, 0.12, 0.05, dentroTaq);
+    caja(0.13, 0.04, 0.03, "#26233f", -0.15, 1.1, 0.05, dentroTaq);
+    caja(0.1, 0.16, 0.05, mat("#e3a23c", { roughness: 0.4 }), 0.15, 1.65, 0.05, dentroTaq);
+    palaMesh.rotation.z = 0.06;
 
-    // Tablón de cimas
-    const tablon = grupo("tablon", 0.15, 1.75, R - 0.07, Math.PI);
-    caja(1.3, 0.85, 0.04, conTextura(corcho(), [1.5, 1]), 0, 0, 0, tablon);
-    const tonos = ["#fbf0e1", "#f2b7bc", "#b4bfab", "#e3cf9f"];
+    // Tablón de cimas: corcho con marco de madera y fotos con chincheta
+    const tablon = grupo("tablon", 0.62, 1.7, R - 0.085, Math.PI);
+    caja(1.3, 0.85, 0.03, conTextura(corcho(), [1.6, 1]), 0, 0, 0, tablon);
+    for (const [w, h, x, y] of [[1.42, 0.06, 0, 0.455], [1.42, 0.06, 0, -0.455], [0.06, 0.97, 0.68, 0], [0.06, 0.97, -0.68, 0]]) caja(w, h, 0.05, mueble, x, y, 0.01, tablon);
+    const CIELOS = [["#7fa6d6", "#d9e6f2"], ["#f0a77a", "#f7d9b0"], ["#5d86c4", "#bcd3ec"], ["#8ab0cf", "#eef3f7"], ["#93b5e0", "#f2e6d0"], ["#4f78b8", "#c9dcf0"], ["#e9a3a8", "#f9e2c8"], ["#9aa5b5", "#dfe3e8"]];
+    function fotoCima(i, nombre) {
+      return textura(160, 200, (c, w, h) => {
+        c.fillStyle = "#f7f4ee"; c.fillRect(0, 0, w, h);
+        const [arriba, abajo] = CIELOS[i % CIELOS.length];
+        const g = c.createLinearGradient(0, 10, 0, 150);
+        g.addColorStop(0, arriba); g.addColorStop(1, abajo);
+        c.fillStyle = g; c.fillRect(10, 10, 140, 140);
+        c.save(); c.beginPath(); c.rect(10, 10, 140, 140); c.clip();
+        // Montañas en capas, la última con nieve
+        for (const [y0, tono, pico] of [[95, "#7a8aa3", 0.6], [110, "#55657d", 0.8], [128, "#3c4a5c", 1]]) {
+          c.fillStyle = tono;
+          c.beginPath(); c.moveTo(10, 150);
+          const cx = 30 + azar() * 100, alto = 45 + azar() * 40 * pico;
+          c.lineTo(10, y0 + 10); c.lineTo(cx - 40, y0 - alto * 0.4); c.lineTo(cx, y0 - alto); c.lineTo(cx + 35, y0 - alto * 0.5); c.lineTo(150, y0 + 5); c.lineTo(150, 150);
+          c.fill();
+          if (pico === 1) { c.fillStyle = "#f4f7fb"; c.beginPath(); c.moveTo(cx - 12, y0 - alto * 0.78); c.lineTo(cx, y0 - alto); c.lineTo(cx + 10, y0 - alto * 0.82); c.lineTo(cx + 2, y0 - alto * 0.86); c.fill(); }
+        }
+        if (nombre && /pendiente/i.test(nombre[2] || "")) { c.fillStyle = "rgba(255,255,255,.45)"; c.fillRect(10, 10, 140, 140); c.fillStyle = "#3c4a5c"; c.font = "700 60px Nunito, sans-serif"; c.textAlign = "center"; c.fillText("?", 80, 100); }
+        c.restore();
+        // Pie escrito a mano
+        c.fillStyle = "#3a3550"; c.textAlign = "center";
+        c.font = "400 17px Pacifico, cursive";
+        c.fillText(nombre ? nombre[0] : "", 80, 178, 140);
+        c.strokeStyle = "rgba(0,0,0,.08)"; c.lineWidth = 2; c.strokeRect(1, 1, w - 2, h - 2);
+      });
+    }
+    const chinchetas = ["#b14645", "#e3a23c", "#476356", "#2c7be5"];
     for (let i = 0; i < 8; i++) {
-      const c = caja(0.24, 0.3, 0.01, tonos[i % 4], -0.45 + (i % 4) * 0.3, i < 4 ? 0.19 : -0.19, -0.025, tablon);
-      c.rotation.z = ((i * 7) % 5 - 2) * 0.03;
-      caja(0.03, 0.03, 0.02, "#b14645", c.position.x, c.position.y + 0.13, -0.035, tablon);
+      const fx = -0.45 + (i % 4) * 0.3, fy = i < 4 ? 0.18 : -0.2, giro = ((i * 7) % 5 - 2) * 0.045;
+      const foto = new T.Mesh(new T.PlaneGeometry(0.22, 0.275), new T.MeshStandardMaterial({ map: fotoCima(i, cimas[i]), roughness: 0.6 }));
+      foto.position.set(fx + Math.sin(i * 2.3) * 0.02, fy, 0.018 + i * 0.0005);
+      foto.rotation.z = giro;
+      tablon.add(foto);
+      const pin = new T.Mesh(new T.SphereGeometry(0.014, 12, 8), mat(chinchetas[i % 4], { roughness: 0.3 }));
+      pin.position.set(foto.position.x - Math.sin(giro) * 0.12, fy + Math.cos(giro) * 0.12, 0.03);
+      tablon.add(pin);
     }
 
     // Mesa, bancos, libro, farol y botiquín (oeste)
@@ -500,21 +660,53 @@ const abrirRefugio = (() => {
     cilindro(0.09, 0.1, 0.03, "#26233f", 0, 0.015, 0, farolG, 8);
     const vidrio = cilindro(0.07, 0.07, 0.2, new T.MeshBasicMaterial({ color: "#ffd59a" }), 0, 0.13, 0, farolG, 8);
     cilindro(0.02, 0.09, 0.07, "#26233f", 0, 0.27, 0, farolG, 8);
-    const botiquin = grupo("botiquin", -R + 0.1, 1.75, -1.9, Math.PI / 2);
-    caja(0.55, 0.45, 0.14, "#ffffff", 0, 0, 0, botiquin);
+    const botiquin = grupo("botiquin", -R + 0.13, 1.75, -1.9, Math.PI / 2);
+    const blanco = mat("#f4f1ea", { roughness: 0.45 }), fondoBot = mat("#ddd6ca", { roughness: 0.8 });
+    caja(0.55, 0.45, 0.01, blanco, 0, 0, -0.065, botiquin);
+    for (const x of [-0.265, 0.265]) caja(0.02, 0.45, 0.14, blanco, x, 0, 0, botiquin);
+    for (const y of [-0.215, 0.215]) caja(0.55, 0.02, 0.14, blanco, 0, y, 0, botiquin);
+    caja(0.51, 0.41, 0.005, fondoBot, 0, 0, -0.058, botiquin);
+    caja(0.51, 0.012, 0.12, fondoBot, 0, 0.02, -0.005, botiquin);
+    for (const x of [-0.17, -0.09]) { const v = cilindro(0.035, 0.035, 0.07, "#ffffff", x, 0.06, -0.01, botiquin, 16); v.rotation.x = Math.PI / 2; }
+    cilindro(0.025, 0.025, 0.1, mat("#c96b3a", { roughness: 0.3 }), 0.05, 0.077, -0.01, botiquin, 14);
+    caja(0.12, 0.08, 0.06, "#b14645", 0.16, 0.066, -0.01, botiquin);
+    caja(0.2, 0.06, 0.08, "#9fc7d8", -0.1, -0.17, -0.01, botiquin);
+    caja(0.16, 0.1, 0.06, "#e7e1d3", 0.13, -0.15, -0.01, botiquin);
     const tapaBot = new T.Group();
-    tapaBot.position.set(-0.275, 0, 0.075);
+    tapaBot.position.set(-0.275, 0, 0.07);
     botiquin.add(tapaBot);
-    caja(0.55, 0.45, 0.02, "#f4f1ea", 0.275, 0, 0, tapaBot);
-    caja(0.26, 0.07, 0.01, "#b14645", 0.275, 0, 0.012, tapaBot);
-    caja(0.07, 0.26, 0.01, "#b14645", 0.275, 0, 0.012, tapaBot);
-    caja(0.47, 0.37, 0.01, "#26233f", 0, 0, 0.065, botiquin);
+    caja(0.55, 0.45, 0.02, blanco, 0.275, 0, 0.01, tapaBot);
+    caja(0.26, 0.07, 0.005, "#b14645", 0.275, 0, 0.022, tapaBot);
+    caja(0.07, 0.26, 0.005, "#b14645", 0.275, 0, 0.022, tapaBot);
+    caja(0.02, 0.08, 0.02, "#9a9a9a", 0.52, 0, 0.025, tapaBot);
 
     // Mochila (aparece al encontrarla)
-    const mochila = grupo("mochila", 0.75, 0, -2.75, -0.4);
-    caja(0.42, 0.55, 0.26, "#b14645", 0, 0.28, 0, mochila);
-    caja(0.36, 0.18, 0.08, "#8f3233", 0, 0.2, 0.16, mochila);
-    caja(0.44, 0.12, 0.28, "#8f3233", 0, 0.58, 0, mochila);
+    const mochila = grupo("mochila", 0.75, 0, -2.72, -0.4);
+    const lonaNegra = conTextura(lona("#202024"), [1.5, 1.5], { roughness: 0.95 }), lonaOscura = conTextura(lona("#151518"), [1.5, 1.5], { roughness: 0.95 });
+    const cinta = mat("#2e2e34", { roughness: 0.8 }), hebilla = mat("#55555c", { roughness: 0.4, metalness: 0.3 });
+    const cuerpoMochila = new T.Group();
+    cuerpoMochila.rotation.x = -0.12;
+    mochila.add(cuerpoMochila);
+    caja(0.38, 0.5, 0.22, lonaNegra, 0, 0.27, 0, cuerpoMochila);
+    const lomo = cilindro(0.11, 0.11, 0.38, lonaNegra, 0, 0.52, 0, cuerpoMochila, 20);
+    lomo.rotation.z = Math.PI / 2;
+    const tapaM = cilindro(0.125, 0.125, 0.4, lonaOscura, 0, 0.55, 0.01, cuerpoMochila, 20);
+    tapaM.rotation.z = Math.PI / 2;
+    tapaM.scale.set(1, 1, 1);
+    caja(0.32, 0.24, 0.06, lonaOscura, 0, 0.2, 0.13, cuerpoMochila);
+    caja(0.28, 0.008, 0.006, "#6d6d75", 0, 0.31, 0.162, cuerpoMochila);
+    caja(0.015, 0.03, 0.01, "#8a8a92", 0.1, 0.3, 0.166, cuerpoMochila);
+    for (const y of [0.18, 0.38]) {
+      caja(0.395, 0.025, 0.006, cinta, 0, y, 0.113, cuerpoMochila);
+      caja(0.05, 0.035, 0.012, hebilla, 0.13, y, 0.118, cuerpoMochila);
+    }
+    for (const x of [-0.08, 0.08]) {
+      caja(0.025, 0.46, 0.006, cinta, x, 0.38, 0.137, cuerpoMochila);
+      caja(0.07, 0.4, 0.04, lonaOscura, x * 1.3, 0.3, -0.13, cuerpoMochila);
+    }
+    const asaM = new T.Mesh(new T.TorusGeometry(0.035, 0.008, 6, 14, Math.PI), cinta);
+    asaM.position.set(0, 0.665, -0.06);
+    cuerpoMochila.add(asaM);
     mochila.visible = false;
 
     escena.traverse((o) => {
@@ -531,9 +723,9 @@ const abrirRefugio = (() => {
       tapaBot.rotation.y = e.hechos.botiquin ? -1.9 : 0;
       fuego = !!e.hechos.fuego;
       llamas.visible = fuego;
-      cristal.material.color.set(fuego ? "#7a2a0c" : "#15141a");
+      cristal.material.color.set(fuego ? "#1a0904" : "#15141a");
       escarcha.material.opacity = e.hechos.vaho ? 0.06 : fuego ? 0.55 : 0.88;
-      puertaTaq.rotation.y = e.hechos.taquilla ? 1.9 : 0;
+      puertaTaq.rotation.y = e.hechos.taquilla ? -1.9 : 0;
       candado.visible = !e.hechos.taquilla;
       dentroTaq.visible = !e.hechos.taquilla;
       bisagra.rotation.y = e.hechos.cavado ? -1.75 : 0;
@@ -588,10 +780,11 @@ const abrirRefugio = (() => {
       while (yaw - vista.yaw < -Math.PI) yaw += 2 * Math.PI;
       objetivo.yaw = yaw;
       objetivo.pitch = limitar(Math.atan2(d.y, Math.hypot(d.x, d.z)) - (bajar ? 0.3 : 0), -0.9, 0.5);
+      objetivo.vuelta = limitar(objetivo.pitch + (bajar ? 0.3 : 0), -0.4, 0.15);
       objetivo.fov = bajar ? 52 : 72;
       pedir();
     }
-    function soltar() { objetivo.fov = 72; objetivo.pitch = limitar(objetivo.pitch + 0.25, -0.55, 0.4); pedir(); }
+    function soltar() { objetivo.fov = 72; objetivo.pitch = objetivo.vuelta ?? -0.15; pedir(); }
 
     const dedos = new Map();
     let movido = 0, bloqueado = false;
@@ -655,7 +848,8 @@ const abrirRefugio = (() => {
       }
       if (fuego) {
         luzFuego.intensity = 1.3 + Math.sin(t * 13) * 0.15 + Math.sin(t * 7.3) * 0.15;
-        llamas.children.forEach((f, i) => { f.scale.y = 0.8 + Math.abs(Math.sin(t * (6 + i * 2.3))) * 0.45; });
+        pintarFuego(t);
+        resplandor.material.opacity = 0.75 + Math.sin(t * 13) * 0.1 + Math.sin(t * 7.3) * 0.1;
       }
       vidrio.material.color.setHSL(0.09, 1, 0.7 + Math.sin(t * 9) * 0.03);
       if (morseLuz) destello.visible = !!crearSala.destello;
@@ -712,9 +906,12 @@ const abrirRefugio = (() => {
         </div>
         <p class="ref-aviso" role="status" hidden></p>
         <section class="ref-panel" hidden aria-live="polite"></section>
-      </div>
-      <div class="ref-inventario" aria-label="Mochila"></div>`;
+        <div class="ref-inventario" aria-label="Lo que llevas"></div>
+      </div>`;
     contenedor.append(raiz);
+    // El 3D ocupa toda la ventana; la cabecera queda encima
+    const dialogo = contenedor.closest("dialog");
+    dialogo?.classList.add("ref-completo");
     const q = (s) => raiz.querySelector(s);
     const panel = q(".ref-panel"), aviso = q(".ref-aviso"), inventario = q(".ref-inventario");
 
@@ -1105,7 +1302,7 @@ const abrirRefugio = (() => {
           sonidos.toque();
           if (id === "puerta" && e.hechos.cavado && !e.hechos.mochila && e.inv.includes("arva")) return abrirPanel("arva");
           abrirPanel(id);
-        });
+        }, datos.cimas);
       } catch (err) {
         console.error(err);
         avisar("Este móvil no puede mostrar el 3D. Prueba a abrir la caja en otro navegador.", 9000);
@@ -1125,6 +1322,7 @@ const abrirRefugio = (() => {
 
     const terminar = () => {
       cerrado = true;
+      dialogo?.classList.remove("ref-completo");
       clearInterval(frio);
       clearTimeout(morseCorriendo);
       clearTimeout(avisoT);

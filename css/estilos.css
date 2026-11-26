@@ -287,16 +287,22 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 @media (prefers-reduced-motion: reduce) { .lug-foto { transition: none; } }
 
 /* ---------- Día 4: escape room en Góriz ---------- */
-.refugio { align-self: stretch; flex: 1; min-height: 0; width: 100%; margin-top: 10px; position: relative; display: flex; flex-direction: column; gap: 10px; font-family: "Nunito", system-ui, sans-serif; text-align: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
-.ref-escena { position: relative; flex: 1; min-height: 200px; border-radius: 18px; overflow: hidden; background: #1d1b2e; }
+.refugio { align-self: stretch; flex: 1; min-height: 0; width: 100%; position: relative; display: flex; flex-direction: column; font-family: "Nunito", system-ui, sans-serif; text-align: center; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; }
+.ref-escena { position: relative; flex: 1; min-height: 200px; overflow: hidden; background: #1d1b2e; --arriba: max(12px, env(safe-area-inset-top)); --abajo: max(10px, env(safe-area-inset-bottom)); }
+/* Pantalla completa: la cabecera de la ventana flota sobre el 3D */
+dialog.ref-completo { padding: 0; }
+dialog.ref-completo header { position: absolute; top: max(12px, env(safe-area-inset-top)); left: 12px; right: 12px; z-index: 6; pointer-events: none; }
+dialog.ref-completo header > * { pointer-events: auto; }
+dialog.ref-completo #ventana-titulo { color: #fff; text-shadow: 0 2px 8px rgb(0 0 0 / .55); }
+dialog.ref-completo #ventana-contenido { gap: 0; }
 .ref-escena > canvas { position: absolute; inset: 0; width: 100%; height: 100%; display: block; touch-action: none; }
 .ref-frio { position: absolute; inset: 0; pointer-events: none; box-shadow: inset 0 0 60px 24px rgb(220 235 255 / .9); transition: opacity 2s; }
-.ref-arriba { position: absolute; left: 8px; right: 8px; top: 8px; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
+.ref-arriba { position: absolute; left: 12px; right: 12px; top: calc(var(--arriba) + 60px); z-index: 2; display: flex; justify-content: space-between; gap: 8px; pointer-events: none; }
 .ref-arriba > * { pointer-events: auto; min-height: 44px; padding: 0 14px; border-radius: 14px; background: rgb(251 240 225 / .94); color: var(--tinta); font: 700 16px "Nunito", sans-serif; display: flex; align-items: center; gap: 6px; }
 .ref-pista span { color: #b14645; letter-spacing: 1px; }
 .ref-pista i { font-style: normal; color: #c9bfb3; }
-.ref-aviso { position: absolute; left: 12px; right: 12px; top: 62px; margin: 0; padding: 10px 14px; border-radius: 14px; background: rgb(38 35 63 / .9); color: #fff; font-size: 15px; font-weight: 700; line-height: 1.3; pointer-events: none; z-index: 2; }
-.ref-panel { position: absolute; left: 0; right: 0; bottom: 0; max-height: 66%; overflow: auto; padding: 16px 16px 18px; border-radius: 18px 18px 0 0; background: var(--crema); color: var(--tinta); box-shadow: 0 -6px 20px rgb(0 0 0 / .25); animation: ref-sube .25s ease-out; touch-action: pan-y; }
+.ref-aviso { position: absolute; left: 12px; right: 12px; top: calc(var(--arriba) + 114px); margin: 0; padding: 10px 14px; border-radius: 14px; background: rgb(38 35 63 / .9); color: #fff; font-size: 15px; font-weight: 700; line-height: 1.3; pointer-events: none; z-index: 2; }
+.ref-panel { position: absolute; left: 8px; right: 8px; bottom: calc(var(--abajo) + 92px); max-height: calc(100% - var(--arriba) - 220px); overflow: auto; padding: 16px 16px 18px; border-radius: 18px; z-index: 3; background: var(--crema); color: var(--tinta); box-shadow: 0 -6px 20px rgb(0 0 0 / .25); animation: ref-sube .25s ease-out; touch-action: pan-y; }
 @keyframes ref-sube { from { transform: translateY(30%); opacity: 0; } }
 .ref-panel h3 { margin: 0 44px 8px; font: 400 24px/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; }
 .ref-panel p { margin: 6px 0; font-size: 16px; font-weight: 700; line-height: 1.35; }
@@ -307,8 +313,8 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .ref-usar, .ref-inventario { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
 .ref-usar button, .ref-obj { width: 72px; min-height: 72px; padding: 6px 2px; border-radius: 14px; background: #fff; color: var(--tinta); font: 700 12px/1.1 "Nunito", sans-serif; display: flex; flex-direction: column; align-items: center; gap: 2px; }
 .ref-usar svg, .ref-obj svg { width: 38px; height: 38px; }
-.ref-inventario { flex: none; min-height: 76px; align-items: center; padding: 2px; border-radius: 18px; background: rgb(38 35 63 / .12); }
-.ref-inventario p { margin: 0; font-size: 15px; font-weight: 700; opacity: .7; }
+.ref-inventario { position: absolute; left: 8px; right: 8px; bottom: var(--abajo); z-index: 4; min-height: 80px; align-items: center; padding: 4px; border-radius: 18px; background: rgb(38 35 63 / .62); -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
+.ref-inventario p { margin: 0; font-size: 15px; font-weight: 700; color: #fff; opacity: .85; }
 .ref-obj { background: var(--crema); }
 .ref-candado { display: flex; justify-content: center; gap: 6px; margin: 10px 0 4px; }
 .ref-candado > div { display: flex; flex-direction: column; align-items: center; width: 52px; border-radius: 12px; background: #2b2a30; color: #fff; }
@@ -345,7 +351,7 @@ dialog h2 { margin: 0; font-size: 30px; font-weight: 400; }
 .ref-dist.pita { background: #476356; }
 .ref-panel .ref-pegatina { display: inline-block; padding: 6px 10px; background: #e3cf9f; transform: rotate(-1.5deg); font-size: 15px; }
 .ref-voz { font-style: italic; color: #476356; }
-.refugio .esc-capa { z-index: 3; border-radius: 20px; }
+.refugio .esc-capa { z-index: 5; border-radius: 0; padding-top: calc(max(12px, env(safe-area-inset-top)) + 64px); }
 .refugio .ref-portada, .refugio .ref-final { background: #26233f; color: #fff; }
 .ref-portada h3, .ref-final h3 { color: var(--rosa); }
 .ref-portada svg { height: clamp(60px, 16vh, 130px); flex: none; }
