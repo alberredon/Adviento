@@ -21,6 +21,100 @@ const abrirRefugio = (() => {
   const limitar = (x, a, b) => Math.max(a, Math.min(b, x));
   const esperar = (ms) => new Promise((r) => setTimeout(r, ms));
 
+  // Paisaje de montañas: cielo, estrellas, crestas con nieve y sombra, bosque y nieve delante
+  function pintarMontes(c, w, h, amanecer) {
+    let sem = 11;
+    const az = () => ((sem = (sem * 16807) % 2147483647) / 2147483647);
+    const g = c.createLinearGradient(0, 0, 0, h * 0.75);
+    if (amanecer) { g.addColorStop(0, "#4f74ad"); g.addColorStop(0.45, "#e9a3b4"); g.addColorStop(0.8, "#ffd59a"); }
+    else { g.addColorStop(0, "#070b1a"); g.addColorStop(0.55, "#1b2647"); g.addColorStop(1, "#3c4b74"); }
+    c.fillStyle = g; c.fillRect(0, 0, w, h);
+    if (!amanecer) {
+      for (let i = 0; i < 160; i++) {
+        const x = az() * w, y = az() * h * 0.55, r = az() < 0.9 ? 0.6 + az() * 0.8 : 1.6;
+        c.fillStyle = `rgba(255,255,255,${0.3 + az() * 0.6})`;
+        c.beginPath(); c.arc(x, y, r * w / 600, 0, 7); c.fill();
+      }
+      const lx = w * 0.82, ly = h * 0.16, lr = w * 0.028, halo = c.createRadialGradient(lx, ly, lr, lx, ly, lr * 5);
+      halo.addColorStop(0, "rgba(220,230,255,.35)"); halo.addColorStop(1, "rgba(220,230,255,0)");
+      c.fillStyle = halo; c.fillRect(lx - lr * 5, ly - lr * 5, lr * 10, lr * 10);
+      c.fillStyle = "#eef2ff"; c.beginPath(); c.arc(lx, ly, lr, 0, 7); c.fill();
+      c.fillStyle = "rgba(160,170,200,.35)"; c.beginPath(); c.arc(lx - lr * 0.3, ly + lr * 0.2, lr * 0.25, 0, 7); c.arc(lx + lr * 0.35, ly - lr * 0.3, lr * 0.18, 0, 7); c.fill();
+    } else {
+      const sx = w * 0.62, sy = h * 0.58, halo = c.createRadialGradient(sx, sy, 0, sx, sy, w * 0.25);
+      halo.addColorStop(0, "rgba(255,240,200,.9)"); halo.addColorStop(1, "rgba(255,220,160,0)");
+      c.fillStyle = halo; c.fillRect(0, 0, w, h);
+    }
+    // Cresta por desplazamiento del punto medio
+    function cresta(base, altura, rugosidad) {
+      // Picos y collados alternos, luego detalle fractal
+      const tramos = 6;
+      let p = Array.from({ length: tramos + 1 }, (_, i) => [(i + (i && i < tramos ? (az() - 0.5) * 0.5 : 0)) * w / tramos, base - (i % 2 ? altura * (0.65 + az() * 0.35) : altura * az() * 0.3)]);
+      for (let paso = 0; paso < 6; paso++) {
+        const n = [p[0]];
+        for (let i = 1; i < p.length; i++) {
+          const [x0, y0] = p[i - 1], [x1, y1] = p[i];
+          n.push([(x0 + x1) / 2, (y0 + y1) / 2 - (az() - 0.5) * altura * 0.35 * Math.pow(rugosidad, paso)], p[i]);
+        }
+        p = n;
+      }
+      return p.map(([x, y]) => [x, Math.min(y, base + altura * 0.15)]);
+    }
+    const capas = amanecer
+      ? [[0.6, 0.32, "#9aa8cc", "#fbeef0"], [0.68, 0.24, "#6f7ea6", "#fff7ee"], [0.76, 0.16, "#4e5c80", "#ffffff"]]
+      : [[0.6, 0.32, "#2c3858", "#9fb0d4"], [0.68, 0.24, "#222c47", "#b8c6e4"], [0.76, 0.16, "#161d33", "#cfd9ef"]];
+    for (const [k, [b, a, roca, nieve]] of capas.entries()) {
+      const p = cresta(h * b, h * a, 0.55);
+      const camino = new Path2D();
+      camino.moveTo(0, h);
+      p.forEach(([x, y]) => camino.lineTo(x, y));
+      camino.lineTo(w, h);
+      c.fillStyle = roca; c.fill(camino);
+      c.save(); c.clip(camino);
+      // Nieve en las cumbres
+      const cima = Math.min(...p.map((q) => q[1]));
+      const gn = c.createLinearGradient(0, cima, 0, cima + h * a * 0.7);
+      gn.addColorStop(0, nieve); gn.addColorStop(0.7, nieve + "aa"); gn.addColorStop(1, nieve + "00");
+      c.fillStyle = gn;
+      c.beginPath(); c.moveTo(0, cima + h * a * 0.7);
+      p.forEach(([x, y]) => c.lineTo(x, y + h * 0.02 + az() * h * 0.03));
+      c.lineTo(w, cima + h * a * 0.7); c.lineTo(w, 0); c.lineTo(0, 0); c.fill();
+      // Laderas en sombra: del pico al valle siguiente
+      c.fillStyle = `rgba(10,14,30,${0.22 + k * 0.05})`;
+      for (let i = 2; i < p.length - 2; i++) {
+        if (p[i][1] < p[i - 2][1] && p[i][1] < p[i + 2][1]) {
+          let j = i + 1;
+          while (j < p.length - 1 && p[j + 1][1] >= p[j][1]) j++;
+          c.beginPath(); c.moveTo(...p[i]);
+          for (let m = i + 1; m <= j; m++) c.lineTo(...p[m]);
+          const hondo = h * a * 0.9;
+          c.lineTo(p[j][0] - (p[j][0] - p[i][0]) * 0.3, p[j][1] + hondo * 0.5); c.lineTo(p[i][0] + (p[j][0] - p[i][0]) * 0.15, p[i][1] + hondo); c.fill();
+        }
+      }
+      c.restore();
+    }
+    // Bosque de abetos y nieve delante
+    c.fillStyle = amanecer ? "#3d4a5c" : "#0d1322";
+    for (let i = 0; i < 40; i++) {
+      const x = az() * w, base = h * (0.78 + az() * 0.04), alto = h * (0.04 + az() * 0.05), ancho = alto * 0.35;
+      c.beginPath(); c.moveTo(x, base - alto); c.lineTo(x - ancho, base); c.lineTo(x + ancho, base); c.fill();
+    }
+    const gs = c.createLinearGradient(0, h * 0.8, 0, h);
+    gs.addColorStop(0, amanecer ? "#fff8f0" : "#8d9cc0"); gs.addColorStop(1, amanecer ? "#e8ecf6" : "#56648a");
+    c.fillStyle = gs;
+    c.beginPath(); c.moveTo(0, h);
+    for (let x = 0; x <= w; x += w / 12) c.lineTo(x, h * 0.81 + Math.sin(x / w * 9) * h * 0.012);
+    c.lineTo(w, h); c.fill();
+  }
+  // Destello de linterna con halo y rayos
+  function pintarDestello(c, x, y, tam) {
+    const g = c.createRadialGradient(x, y, 0, x, y, tam);
+    g.addColorStop(0, "rgba(255,255,240,1)"); g.addColorStop(0.15, "rgba(255,244,190,.95)"); g.addColorStop(0.45, "rgba(255,220,120,.35)"); g.addColorStop(1, "rgba(255,200,90,0)");
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, tam, 0, 7); c.fill();
+    c.strokeStyle = "rgba(255,240,190,.5)"; c.lineWidth = tam * 0.04;
+    for (let i = 0; i < 4; i++) { const a = i * Math.PI / 4; c.beginPath(); c.moveTo(x - Math.cos(a) * tam * 1.3, y - Math.sin(a) * tam * 1.3); c.lineTo(x + Math.cos(a) * tam * 1.3, y + Math.sin(a) * tam * 1.3); c.stroke(); }
+  }
+
   function cargarThree() {
     if (window.THREE) return Promise.resolve();
     cargarThree.p ||= new Promise((ok, mal) => {
@@ -366,22 +460,8 @@ const abrirRefugio = (() => {
     for (const [w, d, x, z] of [[2 * R, 0.16, 0, R - 0.08], [0.16, 2 * R, -R + 0.08, 0], [2.95, 0.16, -2.025, -R + 0.08], [2.95, 0.16, 2.025, -R + 0.08], [0.16, 2.3, R - 0.08, -2.35], [0.16, 3.3, R - 0.08, 1.85], [0.16, 1.4, R - 0.08, -0.5]]) caja(w, 0.7, d, conTextura(texPiedra, [Math.max(w, d) / 2.2, 0.7]), x, 0.35, z);
 
     // Exterior: cielo y montañas, por la ventana y por la puerta
-    function pintarCielo(c, w, h, amanecer) {
-      const g = c.createLinearGradient(0, 0, 0, h);
-      if (amanecer) { g.addColorStop(0, "#5b7fb6"); g.addColorStop(0.45, "#f2b7bc"); g.addColorStop(0.7, "#ffd59a"); }
-      else { g.addColorStop(0, "#0e1426"); g.addColorStop(0.6, "#2a3554"); g.addColorStop(0.75, "#3d4a6b"); }
-      c.fillStyle = g; c.fillRect(0, 0, w, h);
-      const sierra = (y0, alto, color, semilla) => {
-        c.fillStyle = color; c.beginPath(); c.moveTo(0, h);
-        for (let x = 0; x <= w; x += w / 14) c.lineTo(x, y0 - alto * Math.abs(Math.sin(x * 0.011 * semilla + semilla)) - (x * 13 % 7) * 3);
-        c.lineTo(w, h); c.fill();
-      };
-      sierra(h * 0.62, h * 0.22, amanecer ? "#8d9ec4" : "#4b5878", 1.3);
-      sierra(h * 0.72, h * 0.16, amanecer ? "#e9eef7" : "#8090b0", 2.1);
-      c.fillStyle = amanecer ? "#fbfbff" : "#a7b3cc"; c.fillRect(0, h * 0.74, w, h);
-      if (amanecer) { c.fillStyle = "#fff2c4"; c.beginPath(); c.arc(w * 0.62, h * 0.6, 26, 0, 7); c.fill(); }
-    }
-    const cielos = [false, true].map((a) => textura(1024, 512, (c, w, h) => pintarCielo(c, w, h, a)));
+    function pintarCielo(c, w, h, amanecer) { pintarMontes(c, w, h, amanecer); }
+    const cielos = [false, true].map((a) => textura(2048, 1024, (c, w, h) => pintarCielo(c, w, h, a)));
     const fondoMat = new T.MeshBasicMaterial({ map: cielos[0] });
     const fondoEste = new T.Mesh(new T.PlaneGeometry(30, 15), fondoMat);
     fondoEste.position.set(9, 3, -0.5);
@@ -409,8 +489,11 @@ const abrirRefugio = (() => {
     const copos = new T.Points(geoCopos, new T.PointsMaterial({ color: "#ffffff", size: 0.05, transparent: true, opacity: 0.9 }));
     escena.add(copos);
     // Luz de la linterna en la montaña (morse)
-    const destello = new T.Mesh(new T.SphereGeometry(0.12, 10, 8), new T.MeshBasicMaterial({ color: "#fff4c0" }));
-    destello.position.set(8.4, 2.05, -1.1);
+    const destello = new T.Sprite(new T.SpriteMaterial({
+      map: textura(128, 128, (c) => pintarDestello(c, 64, 64, 46)), transparent: true, blending: T.AdditiveBlending, depthWrite: false,
+    }));
+    destello.scale.set(1.1, 1.1, 1);
+    destello.position.set(8.4, 2.25, -1.1);
     destello.visible = false;
     escena.add(destello);
 
@@ -564,11 +647,34 @@ const abrirRefugio = (() => {
       texFuego.needsUpdate = true;
     }
 
-    // Termómetro
-    const termo = grupo("termometro", R - 0.07, 1.75, 0.6);
-    caja(0.03, 0.5, 0.12, "#fbf0e1", 0, 0, 0, termo);
-    const mercurio = caja(0.03, 0.4, 0.03, "#b14645", -0.01, -0.2, 0, termo);
-    mercurio.geometry.translate(0, 0.2, 0);
+    // Termómetro: tablilla de madera, escala, tubo de cristal y bulbo
+    const termo = grupo("termometro", R - 0.075, 1.75, 0.6);
+    caja(0.025, 0.56, 0.15, mueble, 0, 0, 0, termo);
+    const escala = new T.Mesh(new T.PlaneGeometry(0.12, 0.5), new T.MeshStandardMaterial({
+      roughness: 0.7,
+      map: textura(96, 400, (c, w, h) => {
+        c.fillStyle = "#f3ead8"; c.fillRect(0, 0, w, h);
+        c.strokeStyle = "#8a5a3b"; c.lineWidth = 3; c.strokeRect(3, 3, w - 6, h - 6);
+        c.fillStyle = "#26233f"; c.textAlign = "right"; c.font = "700 15px Nunito, sans-serif";
+        for (let t = -20; t <= 40; t += 2) {
+          const y = 330 - (t + 20) / 60 * 290, largo = t % 10 === 0 ? 16 : 8;
+          c.fillRect(w / 2 + 8, y - 0.75, largo, 1.5);
+          if (t % 10 === 0) c.fillText(String(t), w / 2 - 8, y + 5);
+        }
+        c.fillStyle = "#b14645"; c.textAlign = "center"; c.font = "700 16px Nunito, sans-serif"; c.fillText("°C", w / 2, 380);
+      }),
+    }));
+    escala.rotation.y = -Math.PI / 2;
+    escala.position.x = -0.014;
+    termo.add(escala);
+    const tubo = cilindro(0.008, 0.008, 0.33, mat("#ffffff", { transparent: true, opacity: 0.35, roughness: 0.1 }), -0.024, 0.05, 0, termo, 12);
+    tubo.castShadow = false;
+    cilindro(0.0085, 0.0085, 0.006, "#c9c9c9", -0.024, 0.218, 0, termo, 12);
+    const bulbo = new T.Mesh(new T.SphereGeometry(0.016, 16, 12), mat("#c0392b", { roughness: 0.25 }));
+    bulbo.position.set(-0.024, -0.125, 0);
+    termo.add(bulbo);
+    const mercurio = cilindro(0.0045, 0.0045, 0.31, mat("#c0392b", { roughness: 0.3 }), -0.024, -0.112, 0, termo, 8);
+    mercurio.geometry.translate(0, 0.155, 0);
 
     // Literas y taquilla (sur)
     const literas = grupo("literas", -1.35, 0, 2.95);
@@ -742,7 +848,7 @@ const abrirRefugio = (() => {
       pedir();
     }
     function temperatura(t) { // -12..19 ºC
-      mercurio.scale.y = limitar((t + 15) / 36, 0.05, 1);
+      mercurio.scale.y = limitar((t + 20) / 60 * 0.93 + 0.04, 0.03, 1);
     }
     function amanecer() {
       final = performance.now();
@@ -779,8 +885,8 @@ const abrirRefugio = (() => {
       while (yaw - vista.yaw > Math.PI) yaw -= 2 * Math.PI;
       while (yaw - vista.yaw < -Math.PI) yaw += 2 * Math.PI;
       objetivo.yaw = yaw;
-      objetivo.pitch = limitar(Math.atan2(d.y, Math.hypot(d.x, d.z)) - (bajar ? 0.3 : 0), -0.9, 0.5);
-      objetivo.vuelta = limitar(objetivo.pitch + (bajar ? 0.3 : 0), -0.4, 0.15);
+      objetivo.pitch = limitar(Math.atan2(d.y, Math.hypot(d.x, d.z)) - (bajar ? 0.2 : 0), -0.9, 0.5);
+      objetivo.vuelta = limitar(objetivo.pitch + (bajar ? 0.2 : 0), -0.4, 0.15);
       objetivo.fov = bajar ? 52 : 72;
       pedir();
     }
@@ -974,6 +1080,7 @@ const abrirRefugio = (() => {
       panelAbierto = "";
       panel.hidden = true;
       panel.innerHTML = "";
+      panel.classList.remove("ref-grande");
       clearTimeout(morseCorriendo);
       morseCorriendo = 0;
       sonidos.morse(false);
@@ -1025,6 +1132,7 @@ const abrirRefugio = (() => {
       const html = PANELES[id]?.();
       if (html == null) { cerrarPanel(); return; }
       panel.innerHTML = `<button type="button" class="ref-volver" aria-label="Volver a la sala">✕</button>${html}`;
+      panel.classList.toggle("ref-grande", id === "arva");
       panel.hidden = false;
       panel.scrollTop = 0;
       panel.querySelector(".ref-volver").addEventListener("click", cerrarPanel);
@@ -1057,7 +1165,7 @@ const abrirRefugio = (() => {
         if (!e.hechos.fuego) return `<h3>Ventana</h3><p>El cristal está cubierto de hielo por dentro. Con este frío no se ve nada.</p>`;
         if (!e.hechos.vaho) { setTimeout(montarVaho); return `<h3>Ventana</h3><p>Con el calor, el hielo se ha convertido en vaho. Parece que hay algo escrito…</p><canvas class="ref-vaho" width="600" height="340" aria-label="Frota el cristal"></canvas>`; }
         const texto = `<div class="ref-cristal"><p>${datos.vaho.join("</p><p>")}</p></div>`;
-        if (e.hechos.radio && !e.hechos.fin) { setTimeout(montarMorse); return `<h3>Ventana</h3><div class="ref-noche"><i class="ref-luz"></i></div><p class="ref-nota">Una luz parpadea a lo lejos:</p><p class="ref-signos" aria-live="off"></p>${texto}`; }
+        if (e.hechos.radio && !e.hechos.fin) { setTimeout(montarMorse); return `<h3>Ventana</h3><canvas class="ref-noche" width="640" height="300" aria-label="Montañas de noche con una luz a lo lejos"></canvas><p class="ref-nota">Una luz parpadea a lo lejos:</p><p class="ref-signos" aria-live="off"></p>${texto}`; }
         return `<h3>Ventana</h3>${texto}<p class="ref-nota">Fuera sigue nevando.</p>`;
       },
       taquilla: () => {
@@ -1073,7 +1181,7 @@ const abrirRefugio = (() => {
         }
         return `<h3>Puerta</h3><p>Un muro de nieve. Por aquí no se puede salir: habrá que pedir rescate.</p>`;
       },
-      arva: () => { setTimeout(montarArva); return `<h3>ARVA</h3><p class="ref-nota">Mueve el dedo por la nieve. Cuanto más cerca, más rápido pita.</p><div class="ref-arva"><canvas width="600" height="420"></canvas><b class="ref-dist">-- m</b></div><button type="button" class="boton ref-cavar">Cavar aquí</button>`; },
+      arva: () => { setTimeout(montarArva); return `<h3>ARVA</h3><p class="ref-nota">Mueve el dedo por la nieve: cuanto más cerca, más rápido pita.</p><div class="ref-arva"><canvas></canvas><span class="ref-aparato" hidden>${ICONOS.arva}</span><b class="ref-dist">-- m</b></div><button type="button" class="boton ref-cavar">Cavar aquí</button>`; },
       mochila: () => {
         if (e.hechos.mochilaAbierta) return `<h3>Mochila de Alber</h3><p>Ropa mojada y una barrita aplastada.</p>`;
         return `<h3>Mochila</h3><p class="ref-mano">${datos.etiquetaMochila}</p>${candado(C.mochila, false, () => { sonidos.abrir(); hecho("mochilaAbierta"); coger("pilas", "tabla"); refrescar(); })}`;
@@ -1123,8 +1231,18 @@ const abrirRefugio = (() => {
     }
 
     function montarMorse() {
-      const luz = panel.querySelector(".ref-luz"), signos = panel.querySelector(".ref-signos");
-      if (!luz) return;
+      const lienzoNoche = panel.querySelector(".ref-noche"), signos = panel.querySelector(".ref-signos");
+      if (!lienzoNoche) return;
+      const cn = lienzoNoche.getContext("2d"), fondo = document.createElement("canvas");
+      fondo.width = lienzoNoche.width; fondo.height = lienzoNoche.height;
+      pintarMontes(fondo.getContext("2d"), fondo.width, fondo.height, false);
+      const LX = fondo.width * 0.36, LY = fondo.height * 0.5;
+      const luz = { classList: { toggle(_, on) {
+        cn.drawImage(fondo, 0, 0);
+        cn.fillStyle = "#2a2f44"; cn.fillRect(LX - 7, LY - 2, 14, 8); // refugio lejano
+        if (on) pintarDestello(cn, LX, LY - 4, 34); else { cn.fillStyle = "rgba(255,220,150,.35)"; cn.fillRect(LX - 2, LY - 5, 4, 3); }
+      } } };
+      luz.classList.toggle("on", false);
       const U = 260, pasos = [];
       for (const [i, l] of [...C.morse].entries()) {
         for (const [j, s] of [...MORSE[l]].entries()) { pasos.push([true, s === "." ? U : 3 * U, s]); pasos.push([false, j === MORSE[l].length - 1 ? 3 * U : U, j === MORSE[l].length - 1 ? " " : ""]); }
@@ -1151,15 +1269,20 @@ const abrirRefugio = (() => {
     function montarArva() {
       const c = panel.querySelector(".ref-arva canvas"), dist = panel.querySelector(".ref-dist"), cavar = panel.querySelector(".ref-cavar");
       if (!c) return;
-      const x = c.getContext("2d"), W = c.width, H = c.height, ANCHO = 20; // metros
+      const aparato = panel.querySelector(".ref-aparato");
+      c.width = Math.round(c.clientWidth * Math.min(devicePixelRatio || 1, 2));
+      c.height = Math.round(c.clientHeight * Math.min(devicePixelRatio || 1, 2));
+      const x = c.getContext("2d"), W = c.width, H = c.height, ANCHO = 20; // metros a lo ancho
       const meta = [W * (0.2 + Math.random() * 0.6), H * (0.25 + Math.random() * 0.55)];
       let yo = null, siguiente = 0, agujeros = [];
       function pintar() {
         x.fillStyle = "#eef3fa"; x.fillRect(0, 0, W, H);
         x.fillStyle = "#dbe4f0";
-        for (let i = 0; i < 18; i++) { x.beginPath(); x.ellipse((i * 137) % W, (i * 89) % H, 60, 18, 0, 0, 7); x.fill(); }
-        for (const a of agujeros) { x.fillStyle = "#b9c6d8"; x.beginPath(); x.ellipse(a[0], a[1], 22, 12, 0, 0, 7); x.fill(); }
-        if (yo) { x.fillStyle = "#e3a23c"; x.strokeStyle = "#26233f"; x.lineWidth = 4; x.beginPath(); x.roundRect?.(yo[0] - 16, yo[1] - 24, 32, 48, 8); if (!x.roundRect) x.rect(yo[0] - 16, yo[1] - 24, 32, 48); x.fill(); x.stroke(); }
+        const k = W / 600;
+        for (let i = 0; i < 30; i++) { x.beginPath(); x.ellipse((i * 137 * k) % W, (i * 89 * k) % H, 60 * k, 18 * k, 0, 0, 7); x.fill(); }
+        for (const a of agujeros) { x.fillStyle = "#b9c6d8"; x.beginPath(); x.ellipse(a[0], a[1], 26 * k, 14 * k, 0, 0, 7); x.fill(); }
+        if (yo) Object.assign(aparato.style, { left: `${yo[0] / W * 100}%`, top: `${yo[1] / H * 100}%` });
+        aparato.hidden = !yo;
       }
       const metros = () => yo ? Math.hypot(yo[0] - meta[0], yo[1] - meta[1]) / W * ANCHO : 99;
       function mover(ev) {
