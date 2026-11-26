@@ -367,6 +367,35 @@ dialog.ref-completo #ventana-contenido { gap: 0; }
 .ref-foto span { display: block; margin-top: 6px; color: var(--tinta); font-size: 16px; font-weight: 700; line-height: 1.35; }
 @media (prefers-reduced-motion: reduce) { .ref-panel { animation: none; } }
 
+/* ---------- Día 5: ruleta de vales ---------- */
+.ruleta { align-self: stretch; flex: 1; min-height: 0; width: 100%; margin-top: 14px; position: relative; display: flex; flex-direction: column; align-items: center; justify-content: space-evenly; gap: 12px; font-family: "Nunito", system-ui, sans-serif; text-align: center; user-select: none; -webkit-user-select: none; }
+.rul-intro { margin: 0; max-width: 320px; font-size: 16px; font-weight: 700; line-height: 1.35; }
+.rul-rueda { position: relative; width: min(100%, 44vh, 420px); aspect-ratio: 1; flex: none; padding-top: 14px; box-sizing: content-box; }
+.rul-rueda canvas { display: block; width: 100%; height: 100%; touch-action: none; filter: drop-shadow(0 8px 14px rgb(38 35 63 / .35)); }
+.rul-flecha { position: absolute; left: 50%; top: 0; width: 40px; height: 52px; transform-origin: 50% 30%; transform: translateX(-50%); filter: drop-shadow(0 3px 3px rgb(0 0 0 / .35)); z-index: 1; }
+.rul-mensaje { position: absolute; left: 8%; right: 8%; bottom: 6%; margin: 0; padding: 10px 14px; border-radius: 16px; background: rgb(251 240 225 / .97); color: var(--tinta); box-shadow: 0 6px 18px rgb(0 0 0 / .25); display: flex; flex-direction: column; gap: 2px; font-size: 15px; font-weight: 700; line-height: 1.3; animation: rul-salta .45s cubic-bezier(.2,1.6,.4,1); }
+.rul-mensaje b { font: 400 22px/1.2 "Abril Fatface", Georgia, serif; color: #8f3233; }
+.rul-premio { color: #476356; }
+@keyframes rul-salta { from { transform: scale(.6); opacity: 0; } }
+.ruleta .rul-girar { margin: 0; min-height: 54px; padding: 8px 28px; font-family: "Abril Fatface", Georgia, serif; font-size: 21px; }
+.rul-girar:disabled { background: #b4bfab; color: var(--tinta); }
+.rul-ganados { display: grid; grid-template-columns: minmax(0, 1fr); gap: 6px; width: 100%; max-width: 420px; }
+.rul-ticket { min-height: 46px; padding: 6px 14px; border-radius: 12px; background: var(--crema); color: #8f3233; display: flex; align-items: center; gap: 10px; text-align: left; font-size: 15px; line-height: 1.2; }
+.rul-ticket span { font-size: 22px; flex: none; }
+.rul-ticket.vacio { justify-content: center; }
+.rul-ticket.vacio { background: transparent; border: 2px dashed rgb(29 27 46 / .35); color: rgb(29 27 46 / .55); }
+.rul-ticket.nuevo { animation: rul-salta .5s cubic-bezier(.2,1.6,.4,1); }
+.ruleta .esc-capa { z-index: 3; border-radius: 20px; }
+.ruleta .rul-final { background: var(--verde); color: #fff; overflow: hidden; justify-content: center; }
+.rul-final h3 { color: var(--rosa); }
+.rul-final .secundario { color: #fff; }
+.rul-vales { display: grid; grid-auto-rows: 1fr; gap: 14px; width: min(340px, 92%); }
+.rul-vale { position: relative; min-height: 92px; padding: 16px 24px; border-radius: 16px; background: var(--crema); color: #8f3233; display: flex; align-items: center; gap: 12px; text-align: left; opacity: 0; animation: rul-entra .6s cubic-bezier(.16,1,.3,1) forwards; -webkit-mask: radial-gradient(circle 10px at 0 50%, #0000 98%, #000) 0/51% 100% no-repeat, radial-gradient(circle 10px at 100% 50%, #0000 98%, #000) 100%/51% 100% no-repeat; mask: radial-gradient(circle 10px at 0 50%, #0000 98%, #000) 0/51% 100% no-repeat, radial-gradient(circle 10px at 100% 50%, #0000 98%, #000) 100%/51% 100% no-repeat; }
+.rul-vale span { font-size: 38px; flex: none; }
+.rul-vale strong { font: 400 21px/1.2 "Abril Fatface", Georgia, serif; }
+@keyframes rul-entra { from { opacity: 0; transform: translateY(30px) scale(.85); } to { opacity: 1; transform: none; } }
+@media (prefers-reduced-motion: reduce) { .rul-mensaje, .rul-ticket.nuevo { animation: none; } .rul-vale { animation-duration: .01s; } }
+
 /* ---------- Día 6: la guardia ---------- */
 .guardia { background: #1b2244; }
 .guardia .esc-capa { color: var(--tinta); }
