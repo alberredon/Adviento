@@ -1388,9 +1388,11 @@ const abrirRefugio = (() => {
         let papel = "";
         const tonos = ["#f2b7bc", "#d6c5b5", "#b9bd94", "#fbf0e1", "#e6a79b", "#b4bfab", "#e3cf9f"];
         for (let i = 0; i < 36; i++) papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${tonos[i % 7]};animation-delay:${(1.4 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
-        const p = datos.pista || { titulo: "", texto: "" };
-        capa("esc-regalo ref-regalo", `<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>
-          ${papel}<div class="vale"><strong>${p.titulo}</strong><span>${p.texto}</span></div>`);
+        const p = datos.plan?.vale || datos.pista || { titulo: "", texto: "" };
+        const b = capa("esc-regalo ref-regalo", `<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>
+          ${papel}<div class="vale"><strong>${p.titulo}</strong><span>${p.texto}</span></div>
+          ${datos.plan ? '<button type="button" class="boton ref-ver-pista">Ver el plan</button>' : ""}`);
+        b(".ref-ver-pista")?.addEventListener("click", verPlan);
         sonidos.ganar();
         return;
       }
@@ -1423,6 +1425,119 @@ const abrirRefugio = (() => {
       const b = capa("ref-final", `<div class="pista-tarjeta"><span aria-hidden="true">🔍</span><small>${p.titulo}</small><strong>${p.texto}</strong></div><button type="button" class="secundario">Volver a la foto</button>`);
       sonidos.ganar();
       b(".secundario").addEventListener("click", regalo);
+    }
+
+    // El vale final: fotos que se pasan y botones con el plan
+    const fotosBal = new Map();
+    function fotoBal(n) {
+      if (!fotosBal.has(n)) {
+        fotosBal.set(n, Cifrado.imagen(CARPETA + n));
+        fotosBal.get(n).catch(() => fotosBal.delete(n));
+      }
+      return fotosBal.get(n);
+    }
+    function verPlan() {
+      const B = datos.plan, F = B.fotos || [];
+      let n = 0;
+      const b = capa("ref-plan", `<div class="bal-cabecera"><small>Vale para dos</small><h3>${B.titulo}</h3><p>${B.subtitulo}</p></div>
+        <div class="bal-carrusel"><img alt="Foto del plan"><button type="button" class="bal-ant" aria-label="Foto anterior">‹</button><button type="button" class="bal-sig" aria-label="Foto siguiente">›</button>
+          <div class="bal-puntos" aria-hidden="true">${F.map(() => "<i></i>").join("")}</div></div>
+        <div class="bal-botones">${B.secciones.map((x, i) => `<button type="button" data-i="${i}"><span aria-hidden="true">${x.icono}</span>${x.nombre}</button>`).join("")}</div>
+        <button type="button" class="secundario">Volver al vale</button>`);
+      const img = b(".bal-carrusel img"), puntos = [...raiz.querySelectorAll(".bal-puntos i")];
+      const ver = (k) => {
+        n = (k + F.length) % F.length;
+        puntos.forEach((p, i) => p.classList.toggle("si", i === n));
+        const pedida = n;
+        fotoBal(F[n]).then((u) => { if (!cerrado && pedida === n && img.isConnected) img.src = u; }).catch(() => {});
+        fotoBal(F[(n + 1) % F.length]).catch(() => {}); // la siguiente, lista de antemano
+      };
+      b(".bal-ant").addEventListener("click", () => { sonidos.toque(); ver(n - 1); });
+      b(".bal-sig").addEventListener("click", () => { sonidos.toque(); ver(n + 1); });
+      let x0 = null;
+      const carrusel = b(".bal-carrusel");
+      carrusel.addEventListener("pointerdown", (e) => { x0 = e.clientX; });
+      carrusel.addEventListener("pointerup", (e) => {
+        if (x0 === null) return;
+        const dx = e.clientX - x0;
+        x0 = null;
+        if (Math.abs(dx) > 40) { sonidos.toque(); ver(n + (dx < 0 ? 1 : -1)); }
+      });
+      raiz.querySelectorAll(".bal-botones button").forEach((t) => t.addEventListener("click", () => { sonidos.toque(); detallePlan(+t.dataset.i); }));
+      b(".secundario").addEventListener("click", regalo);
+      if (F.length) ver(0);
+    }
+
+    function perfilPlan(B) {
+      const W = 330, H = 150, T = B.track, C = B.cima, maxKm = C.km;
+      const minA = 1300, maxA = 3300, x = (km) => 14 + km / maxKm * (W - 28), y = (a) => H - 20 - (a - minA) / (maxA - minA) * (H - 40);
+      const linea = T.map((p) => `${x(p[3]).toFixed(1)},${y(p[2]).toFixed(1)}`).join(" ");
+      const ult = T[T.length - 1];
+      const marcas = B.hitos.map(([i, nombre], k) => {
+        const p = T[i], px = x(p[3]), py = y(p[2]), fin = k === B.hitos.length - 1;
+        const ancla = fin ? "end" : "start", tx = fin ? px - 6 : px + 6, ty = k === 0 ? py - 16 : py + 16;
+        return `<circle cx="${px}" cy="${py}" r="3.5" fill="#fbf0e1" stroke="#26233f" stroke-width="1.5"/>
+          <text x="${tx}" y="${ty}" text-anchor="${ancla}">${nombre}</text><text class="alt" x="${tx}" y="${ty + 11}" text-anchor="${ancla}">km ${p[3].toFixed(1).replace(".", ",")}</text>`;
+      }).join("");
+      const ejes = [1500, 2000, 2500, 3000].map((a) => `<line x1="14" x2="${W - 14}" y1="${y(a)}" y2="${y(a)}" stroke="#26233f" stroke-opacity=".08"/>`).join("");
+      return `<svg class="bal-perfil" viewBox="0 0 ${W} ${H}" role="img" aria-label="Perfil de subida">${ejes}
+        <polygon points="${x(0)},${H - 20} ${linea} ${x(ult[3])},${H - 20}" fill="#a9c2ad" opacity=".9"/>
+        <polyline points="${linea}" fill="none" stroke="#26233f" stroke-width="2" stroke-linejoin="round"/>
+        <line x1="${x(ult[3])}" y1="${y(ult[2])}" x2="${x(C.km)}" y2="${y(C.alt)}" stroke="#b14645" stroke-width="2" stroke-dasharray="4 3"/>
+        <circle cx="${x(C.km)}" cy="${y(C.alt)}" r="4.5" fill="#b14645" stroke="#26233f" stroke-width="1.5"/>
+        <text x="${x(C.km) - 7}" y="${y(C.alt) - 6}" text-anchor="end">${C.nombre} · ${C.alt.toLocaleString("es-ES")} m</text>${marcas}</svg>`;
+    }
+
+    // Mapa a vista de pájaro: teselas de OpenTopoMap y el recorrido encima
+    function mapaPlan(caja, B) {
+      const Z = 14, T = B.track;
+      const mundo = (lat, lon) => {
+        const s = Math.sin(lat * Math.PI / 180), n = 256 * 2 ** Z;
+        return [(lon + 180) / 360 * n, (0.5 - Math.log((1 + s) / (1 - s)) / (4 * Math.PI)) * n];
+      };
+      const P = T.map((p) => mundo(p[0], p[1]));
+      const xs = P.map((p) => p[0]), ys = P.map((p) => p[1]), marg = 60;
+      let x0 = Math.min(...xs) - marg, x1 = Math.max(...xs) + marg, y0 = Math.min(...ys) - marg, y1 = Math.max(...ys) + marg;
+      const alto = (x1 - x0) * 1.05; // casi cuadrado
+      if (y1 - y0 < alto) { const c = (y0 + y1) / 2; y0 = c - alto / 2; y1 = c + alto / 2; }
+      const w = x1 - x0, h = y1 - y0, k = caja.clientWidth / w;
+      caja.style.height = `${h * k}px`;
+      let teselas = "";
+      for (let tx = Math.floor(x0 / 256); tx <= Math.floor(x1 / 256); tx++) {
+        for (let ty = Math.floor(y0 / 256); ty <= Math.floor(y1 / 256); ty++) {
+          const sub = "abc"[(tx + ty) % 3];
+          teselas += `<img src="https://${sub}.tile.opentopomap.org/${Z}/${tx}/${ty}.png" alt="" loading="lazy" style="left:${(tx * 256 - x0) * k}px;top:${(ty * 256 - y0) * k}px;width:${256 * k + 1}px;height:${256 * k + 1}px">`;
+        }
+      }
+      const ruta = P.map((p) => `${(p[0] - x0).toFixed(1)},${(p[1] - y0).toFixed(1)}`).join(" ");
+      const hitos = B.hitos.map(([i, nombre], n) => {
+        const [px, py] = P[i];
+        return `<circle cx="${px - x0}" cy="${py - y0}" r="${n === B.hitos.length - 1 ? 9 : 7}" fill="${n === B.hitos.length - 1 ? "#b14645" : "#fbf0e1"}" stroke="#26233f" stroke-width="3"/>
+          ${px - x0 > w * 0.5 ? `<text x="${px - x0 - 13}" y="${py - y0 + 5}" text-anchor="end">${nombre}</text>` : `<text x="${px - x0 + 13}" y="${py - y0 + 5}">${nombre}</text>`}`;
+      }).join("");
+      caja.innerHTML = `${teselas}<svg viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline points="${ruta}" fill="none" stroke="#fff" stroke-width="10" stroke-linejoin="round" stroke-linecap="round" opacity=".85"/>
+        <polyline points="${ruta}" fill="none" stroke="#b14645" stroke-width="5" stroke-linejoin="round" stroke-linecap="round"/>${hitos}</svg>
+        <small class="bal-atrib">© OpenTopoMap (CC-BY-SA) · © OpenStreetMap</small>`;
+    }
+
+    function detallePlan(i) {
+      const B = datos.plan, x = B.secciones[i];
+      let cuerpo = "";
+      if (x.id === "itinerario") {
+        cuerpo = `<div class="bal-mapa" role="img" aria-label="Mapa del recorrido"></div>${perfilPlan(B)}
+          <dl class="bal-datos">${x.datos.map(([k, v]) => `<div><dt>${k}</dt><dd>${v}</dd></div>`).join("")}</dl>
+          <div class="bal-texto">${x.parrafos.map((p) => `<p>${p}</p>`).join("")}</div>`;
+      } else if (x.lista) {
+        cuerpo = `<ul class="bal-texto bal-lista">${x.lista.map((p) => `<li>${p}</li>`).join("")}</ul>`;
+      } else {
+        cuerpo = `${x.foto ? '<img class="bal-foto" alt="Foto del paso clave">' : ""}<div class="bal-texto">${x.parrafos.map((p) => `<p>${p}</p>`).join("")}</div>`;
+      }
+      const b = capa("ref-plan bal-detalle", `<div class="bal-cabecera"><small>${x.icono} ${B.corto}</small><h3>${x.nombre}</h3></div>${cuerpo}
+        <button type="button" class="secundario">Volver al plan</button>`);
+      b(".secundario").addEventListener("click", verPlan);
+      if (x.foto) { const img = b(".bal-foto"); fotoBal(x.foto).then((u) => { if (img.isConnected) img.src = u; }).catch(() => img.remove()); }
+      const mapa = b(".bal-mapa");
+      if (mapa) mapaPlan(mapa, B);
     }
 
     // ---------- Portada ----------
@@ -1516,6 +1631,7 @@ const abrirRefugio = (() => {
       sala?.cerrar();
       sonidos.cerrar();
       if (fotoUrl) URL.revokeObjectURL(fotoUrl);
+      for (const p of fotosBal.values()) p.then((u) => URL.revokeObjectURL(u)).catch(() => {});
       dormida?.then((u) => URL.revokeObjectURL(u)).catch(() => {});
     };
     if (location.hostname === "localhost") window.refugioPruebas = { abrirPanel, estado: () => e };

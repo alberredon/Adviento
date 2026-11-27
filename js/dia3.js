@@ -256,7 +256,7 @@ const abrirLugares = (() => {
 
   // ---------- Pantallas ----------
   function montar(contenedor, datos, datosMapa) {
-    const { fotos: FOTOS, frases: FRASES, vale: VALE } = datos;
+    const { fotos: FOTOS, frases: FRASES, vale: VALE, regalo: REGALO } = datos;
     const urls = new Map();
     const sonidos = crearSonidos();
     let cerrado = false, puntos = [], usadas = [], fase = "", pistas = 0; // usadas: fotos que se han alejado
@@ -413,6 +413,7 @@ const abrirLugares = (() => {
     }
     function final() {
       fase = "final";
+      if (REGALO) prepararRegalo().catch(() => {});
       const tope = MAXIMO * FOTOS.length, pct = total() / tope * 100;
       const i = FRASES.reduce((m, f, k) => (pct >= f[0] ? k : m), 0);
       const estrellas = Array.from({ length: FRASES.length }, (_, k) => `<i class="${k <= i ? "si" : ""}">★</i>`).join("");
@@ -422,14 +423,36 @@ const abrirLugares = (() => {
       sonidos.ganar();
       b(".boton").addEventListener("click", sorpresa);
     }
-    function sorpresa() {
+    // Foto del regalo lista antes de enseñarla (así no da saltos al subir)
+    let fotoRegalo = null;
+    function prepararRegalo() {
+      fotoRegalo ||= imagen("regalo").then(async (u) => {
+        const i = new Image();
+        i.src = u;
+        try { await i.decode(); } catch {}
+        return i;
+      });
+      fotoRegalo.catch(() => { fotoRegalo = null; });
+      return fotoRegalo;
+    }
+    async function sorpresa() {
       fase = "sorpresa";
+      let foto = null;
+      if (REGALO) {
+        const b = raiz.querySelector(".lug-final .boton");
+        if (b) { b.disabled = true; b.textContent = "Abriendo…"; }
+        try { foto = await prepararRegalo(); } catch {}
+        if (cerrado) return;
+      }
       let papel = "";
       for (let i = 0; i < 36; i++) {
         papel += `<i class="confeti" style="left:${(i * 37) % 100}%;background:${TONOS[i % 7]};animation-delay:${(1.4 + (i % 9) * 0.16).toFixed(2)}s"></i>`;
       }
+      const regalo = REGALO
+        ? `<figure class="ref-foto">${foto ? `<img src="${foto.src}" width="${foto.naturalWidth}" height="${foto.naturalHeight}" alt="Tu regalo">` : ""}<figcaption><strong>${REGALO.titulo}</strong><span>${REGALO.mensaje}${foto ? "" : " (No se ha podido cargar la foto: comprueba la conexión y vuelve a abrir la caja.)"}</span></figcaption></figure>`
+        : `<div class="vale"><strong>${VALE.titulo}</strong><span>${VALE.texto}</span></div>`;
       capa("esc-regalo", `<div class="caja-regalo" aria-hidden="true"><i class="base"></i><i class="cinta"></i><i class="tapa"></i></div>
-        ${papel}<div class="vale"><strong>${VALE.titulo}</strong><span>${VALE.texto}</span></div>`);
+        ${papel}${regalo}`);
       sonidos.ganar();
     }
 
